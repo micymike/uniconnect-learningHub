@@ -6,15 +6,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS for frontend
-  app.enableCors({ origin: 'http://localhost:3000' });
+  //app.enableCors({ origin: 'http://localhost:3000' });
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Your Project Name')
-    .setDescription('API documentation for your NestJS app')
+    .setTitle('Uni-connect API')
+    .setDescription('API documentation for Uni-connect ')
     .setVersion('1.0')
     .addBearerAuth() 
     .build();
+
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
