@@ -10,11 +10,12 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Your Project Name')
-    .setDescription('API documentation for your NestJS app')
+    .setTitle('Uni-connect API')
+    .setDescription('API documentation for Uni-connect ')
     .setVersion('1.0')
     .addBearerAuth() 
     .build();
+
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
