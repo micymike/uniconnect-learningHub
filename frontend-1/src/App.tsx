@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminCourses from './pages/AdminCourses';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
 import './App.css';
 
@@ -38,6 +39,14 @@ function App() {
           element={
             <RequireAuth>
               <AdminCourses />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <RequireAuth>
+              <AnalyticsDashboard />
             </RequireAuth>
           }
         />

@@ -21,7 +21,13 @@ export default function AdminDashboard() {
             Dashboard
           </button>
           <button
-            className="text-left py-2 px-4 rounded hover:bg-gray-800 transition"
+            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
+            onClick={() => navigate("/admin/analytics")}
+          >
+            Analytics
+          </button>
+          <button
+            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
             onClick={() => navigate("/admin/courses")}
           >
             Manage Courses

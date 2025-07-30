@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -11,7 +12,8 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://mosesmichael878:%4013353Mike@cluster0.kyzvgkt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'),
+    AnalyticsModule,
+    MongooseModule.forRoot(process.env.MONGO_URI || ''),
     UsersModule,
     CoursesModule,
     SectionsModule,
