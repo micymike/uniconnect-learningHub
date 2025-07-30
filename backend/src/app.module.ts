@@ -9,17 +9,19 @@ import { SectionsModule } from './sections/sections.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { AuthModule } from './auth/auth.module';
+import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
+    MongooseModule.forRoot(process.env.MONGO_URI!),
     AnalyticsModule,
-    MongooseModule.forRoot(process.env.MONGO_URI || ''),
     UsersModule,
     CoursesModule,
     SectionsModule,
     LessonsModule,
     QuizzesModule,
     AuthModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [AppService],
