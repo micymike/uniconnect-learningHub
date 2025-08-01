@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { SectionsService } from './sections.service';
 import { SectionsController } from './sections.controller';
-import { Section, SectionSchema } from './sections.schema';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Section.name, schema: SectionSchema }])],
+  imports: [
+    SupabaseModule,
+    ConfigModule, 
+  ],
   providers: [SectionsService],
   controllers: [SectionsController],
-  exports: [SectionsService],
+  exports: [SectionsService], 
 })
 export class SectionsModule {}
