@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
-import { User, UserSchema } from '../users/users.schema';
-import { Course, CourseSchema } from '../courses/courses.schema';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: Course.name, schema: CourseSchema },
-    ]),
+    SupabaseModule,
   ],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
+  exports: [AnalyticsService], 
 })
 export class AnalyticsModule {}

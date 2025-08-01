@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AnalyticsModule } from './analytics/analytics.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { CoursesModule } from './courses/courses.module';
 import { SectionsModule } from './sections/sections.module';
 import { LessonsModule } from './lessons/lessons.module';
@@ -13,9 +12,13 @@ import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGO_URI!),
-    AnalyticsModule,
+    ConfigModule.forRoot({
+      isGlobal: true, 
+      envFilePath: '.env' 
+    }),
+    SupabaseModule.forRoot(),
     UsersModule,
+    AnalyticsModule,
     CoursesModule,
     SectionsModule,
     LessonsModule,
@@ -23,7 +26,7 @@ import { AIModule } from './ai/ai.module';
     AuthModule,
     AIModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
