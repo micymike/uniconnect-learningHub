@@ -1,25 +1,32 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { User, UserSchema } from '../users/users.schema';
 import { UsersService } from '../users/users.service';
-import { DemoController } from './demo.controller';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default_jwt_secret',
-      signOptions: { expiresIn: '7d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'default_jwt_secret',
+        signOptions: { expiresIn: '7d' },
+      }),
+      inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    SupabaseModule,
   ],
-  providers: [AuthService, JwtStrategy, UsersService],
-  controllers: [AuthController, DemoController],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    UsersService,
+  ],
+  controllers: [AuthController],
   exports: [AuthService],
 })
 export class AuthModule {}

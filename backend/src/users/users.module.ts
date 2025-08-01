@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { User, UserSchema } from './users.schema';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
+  imports: [SupabaseModule.forRoot()], 
   providers: [UsersService],
   controllers: [UsersController],
   exports: [UsersService],
