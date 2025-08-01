@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { LessonsService } from './lessons.service';
 import { LessonsController } from './lessons.controller';
-import { Lesson, LessonSchema } from './lessons.schema';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Lesson.name, schema: LessonSchema }])],
+  imports: [
+    SupabaseModule, 
+    ConfigModule,  
+  ],
   providers: [LessonsService],
   controllers: [LessonsController],
-  exports: [LessonsService],
+  exports: [LessonsService], 
 })
 export class LessonsModule {}
