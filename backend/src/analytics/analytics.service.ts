@@ -1,27 +1,45 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserDocument } from '../users/users.schema';
-import { Course, CourseDocument } from '../courses/courses.schema';
+import { Injectable, Inject } from '@nestjs/common';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { UserRole } from '../users/interfaces/user.interface';
 
 @Injectable()
 export class AnalyticsService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
+    @Inject('SUPABASE_CLIENT') private supabase: SupabaseClient
   ) {}
 
   async getSummary() {
-    const totalUsers = await this.userModel.countDocuments();
-    const totalStudents = await this.userModel.countDocuments({ role: 'student' });
-    const totalAdmins = await this.userModel.countDocuments({ role: 'admin' });
-    const totalCourses = await this.courseModel.countDocuments();
+    try {
+      // number of platform users
+      const { count: totalUsers } = await this.supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
 
-    return {
-      totalUsers,
-      totalStudents,
-      totalAdmins,
-      totalCourses,
-    };
+      // number of students
+      const { count: totalStudents } = await this.supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', UserRole.STUDENT);
+
+      // number of admins
+      const { count: totalAdmins } = await this.supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', UserRole.ADMIN);
+
+      // nuber of courses
+      const { count: totalCourses } = await this.supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true });
+
+      return {
+        totalUsers,
+        totalStudents,
+        totalAdmins,
+        totalCourses,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch analytics: ${error.message}`);
+    }
   }
 }
