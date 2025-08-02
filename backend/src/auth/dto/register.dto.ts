@@ -1,14 +1,18 @@
-import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
-import { UserRole } from '../../users/interfaces/user.interface';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
   email: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   password: string;
 
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsString()
+  @IsIn(['student', 'admin'])
+  role: string;
+
+  @IsString()
+  @IsOptional()
+  fullName?: string;
 }
