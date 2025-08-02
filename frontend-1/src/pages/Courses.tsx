@@ -14,7 +14,7 @@ const Courses: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/courses')
+    fetch('http://localhost:3000/api/courses')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch courses');
         return res.json();
