@@ -1,26 +1,44 @@
-// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  
+  app.setGlobalPrefix('api', {
+    exclude: ['swagger'] 
+  });
+
+
+  const config = new DocumentBuilder()
+    .setTitle('Uni-connect API')
+    .setDescription('API documentation for Uni-connect')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+
+  SwaggerModule.setup('swagger', app, document, {
+    customSiteTitle: 'Uni-connect API Docs'
+  });
+
+  // pipes and CORS
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, 
-      forbidNonWhitelisted: true, 
-      transform: true, 
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, 
+        enableImplicitConversion: true,
       },
     }),
   );
 
-  // CORS 
   const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3001'];
   app.enableCors({
     origin: corsOrigins,
@@ -29,13 +47,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api');
-
   const port = configService.get('PORT') || 3000;
   await app.listen(port);
-  
-  console.log(` Application is running on: http://localhost:${port}/api`);
-  
+
+  console.log(`Application is running on: http://localhost:${port}/api`);
+  console.log(`Swagger UI  at: http://localhost:${port}/swagger`);
 }
 
 bootstrap();
