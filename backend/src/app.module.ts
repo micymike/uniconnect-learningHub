@@ -8,15 +8,15 @@ import { SectionsModule } from './sections/sections.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { AuthModule } from './auth/auth.module';
-import { AIModule } from './ai/ai.module';
+//import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, 
-      envFilePath: '.env' 
+      envFilePath: '${process.cwd()}/.env' 
     }),
-    SupabaseModule.forRoot(),
+    SupabaseModule,
     UsersModule,
     AnalyticsModule,
     CoursesModule,
@@ -24,7 +24,7 @@ import { AIModule } from './ai/ai.module';
     LessonsModule,
     QuizzesModule,
     AuthModule,
-    AIModule,
+   // AIModule,
   ],
   controllers: [],
   providers: [],

@@ -1,78 +1,41 @@
-import * as dotenv from 'dotenv';
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { Logger } from '@nestjs/common';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import { ConfigService } from '@nestjs/config';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  dotenv.config();
-
   const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Bootstrap');
+  const configService = app.get(ConfigService);
 
-  //  Middleware for security and rate limiting
-  app.use(helmet());
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100, 
-    })
+  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, 
+      forbidNonWhitelisted: true, 
+      transform: true, 
+      transformOptions: {
+        enableImplicitConversion: true, 
+      },
+    }),
   );
 
-  //CORS config
+  // CORS 
+  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3001'];
   app.enableCors({
-    origin: process.env.FRONTEND_URLS?.split(',') || [
-      'http://localhost:3000',
-      '#prod'
-    ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    })
-  );
+  app.setGlobalPrefix('api');
 
-  // Swagger config
-  const config = new DocumentBuilder()
-    .setTitle('Uni-connect API')
-    .setDescription('Comprehensive API documentation for Uni-connect platform')
-    .setVersion('1.0')
-    .addBearerAuth({
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-      name: 'JWT',
-      description: 'Enter JWT token',
-      in: 'header',
-    })
-    .addServer(process.env.API_BASE_URL || 'http://localhost:3000')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      tagsSorter: 'alpha',
-      operationsSorter: 'method',
-    },
-  });
-
-  const port = process.env.PORT || 3000;
+  const port = configService.get('PORT') || 3000;
   await app.listen(port);
-  logger.log(`Application running on port ${port}`);
-  logger.log(`Swagger docs available at /api-docs`);
+  
+  console.log(` Application is running on: http://localhost:${port}/api`);
+  
 }
 
-bootstrap().catch(err => {
-  console.error('Application bootstrap failed:', err);
-  process.exit(1);
-});
-
+bootstrap();
