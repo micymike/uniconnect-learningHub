@@ -13,7 +13,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/interfaces/user.interface';
@@ -23,7 +23,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 @ApiTags('Courses')
 @ApiBearerAuth()
 @Controller('courses')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 

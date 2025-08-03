@@ -3,14 +3,14 @@ import { AnalyticsService } from './analytics.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Inject } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(
