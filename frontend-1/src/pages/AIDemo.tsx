@@ -277,13 +277,24 @@ function AIDemo() {
               )}
             </AnimatePresence>
 
-            {/* Results Display */}
-            <AIResultDisplay
-              result={result}
-              loading={loading}
-              error={error}
-              onClear={handleClearResult}
-            />
+            {/* Results Display + Chat */}
+            <div className="space-y-8">
+              <AIResultDisplay
+                result={result}
+                loading={loading}
+                error={error}
+                onClear={handleClearResult}
+              />
+
+              {/* Chat UI for follow-up */}
+              {result && (
+                <ChatWithAI
+                  activeFeature={activeFeature}
+                  studentId={studentId}
+                  API_BASE={API_BASE}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -302,5 +313,129 @@ function AIDemo() {
     </div>
   );
 }
+
+/**
+ * ChatWithAI component: enables ongoing chat with the AI after a result is shown.
+ */
+const ChatWithAI: React.FC<{
+  activeFeature: AIFeature | null;
+  studentId: string | null;
+  API_BASE: string;
+}> = ({ activeFeature, studentId, API_BASE }) => {
+  const [conversation, setConversation] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+
+  // On first mount, if there is a result, add it as the first AI message
+  useEffect(() => {
+    setConversation([]);
+    setInput("");
+    setError("");
+  }, [activeFeature]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !activeFeature || !studentId) return;
+    setLoading(true);
+    setError("");
+    const userMsg = input.trim();
+    setConversation((prev) => [...prev, { role: "user", content: userMsg }]);
+    setInput("");
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        return;
+      }
+      // Use a generic chat endpoint or fallback to /ai/ask
+      let url = API_BASE + "/ai/ask";
+      let body: any = { question: userMsg };
+      // If the feature has a custom path, use it (optional: you may want to restrict to chat-capable features)
+      if (activeFeature.path && activeFeature.path !== "/ai/ask") {
+        url = API_BASE + activeFeature.path;
+        body = { ...body, feature: activeFeature.id };
+      }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || `HTTP error! status: ${res.status}`);
+      }
+      // Show only the main AI message (handle both {answer}, {message}, or plain string)
+      let aiMsg = "";
+      if (typeof data === "string") aiMsg = data;
+      else if (data.answer) aiMsg = data.answer;
+      else if (data.message) aiMsg = data.message;
+      else aiMsg = JSON.stringify(data);
+      setConversation((prev) => [...prev, { role: "ai", content: aiMsg }]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">Continue Chatting with AI</h3>
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto mb-4">
+        {conversation.length === 0 && (
+          <div className="text-gray-500 text-sm">No messages yet. Start the conversation!</div>
+        )}
+        {conversation.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`px-4 py-2 rounded-lg max-w-[70%] ${
+                msg.role === "user"
+                  ? "bg-blue-500 text-white self-end"
+                  : "bg-white border border-gray-200 text-gray-900 self-start"
+              }`}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="mb-3 flex justify-start">
+            <div className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-500">
+              AI is thinking...
+            </div>
+          </div>
+        )}
+      </div>
+      {error && <div className="text-red-600 mb-2">{error}</div>}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          placeholder="Type your message..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSend();
+          }}
+          disabled={loading}
+        />
+        <button
+          onClick={handleSend}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          disabled={loading || !input.trim()}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default AIDemo;

@@ -571,6 +571,76 @@ if (
       );
     }
 
+    // Handle motivation coach response (single "message" property)
+    if (
+      data &&
+      typeof data === "object" &&
+      typeof data.message === "string" &&
+      Object.keys(data).length === 1
+    ) {
+      // Split message into intro, tips, and outro
+      const lines = data.message.split("\n").filter((l: string) => l.trim() !== "");
+      const intro: string[] = [];
+      const tips: string[] = [];
+      const outro: string[] = [];
+      let inTips = false;
+      let inOutro = false;
+      for (const line of lines) {
+        if (/^\d+\.\s/.test(line)) {
+          inTips = true;
+        }
+        if (inTips && !/^\d+\.\s/.test(line)) {
+          inOutro = true;
+        }
+        if (!inTips && !inOutro) {
+          intro.push(line);
+        } else if (inTips && !inOutro && /^\d+\.\s/.test(line)) {
+          tips.push(line);
+        } else if (inOutro) {
+          outro.push(line);
+        }
+      }
+      return (
+        <div className="bg-gradient-to-r from-yellow-50 to-pink-50 rounded-lg p-6 border border-yellow-200">
+          <h3 className="text-lg font-semibold text-pink-800 mb-3">Motivation & Wellness</h3>
+          {intro.length > 0 && (
+            <div className="mb-4 text-gray-800 text-base whitespace-pre-line">
+              {intro.map((p, i) => (
+                <p key={i} className="mb-2">{p}</p>
+              ))}
+            </div>
+          )}
+          {tips.length > 0 && (
+            <div className="mb-4">
+              <h4 className="font-medium text-yellow-700 mb-2">Quick Tips</h4>
+              <ul className="list-decimal ml-6 space-y-2">
+                {tips.map((tip, i) => {
+                  // Remove the number and parse markdown bold
+                  const tipText = tip.replace(/^\d+\.\s*/, "");
+                  // Render **bold** as <strong>
+                  const parts = tipText.split(/(\*\*.*?\*\*)/g).map((part, idx) =>
+                    part.startsWith("**") && part.endsWith("**") ? (
+                      <strong key={idx} className="font-semibold">{part.replace(/\*\*/g, "")}</strong>
+                    ) : (
+                      <span key={idx}>{part}</span>
+                    )
+                  );
+                  return <li key={i} className="text-gray-700">{parts}</li>;
+                })}
+              </ul>
+            </div>
+          )}
+          {outro.length > 0 && (
+            <div className="text-gray-700 text-base whitespace-pre-line">
+              {outro.map((p, i) => (
+                <p key={i} className="mb-2">{p}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // If the result is an object with an "answer" property, show just the answer
     if (data && typeof data === "object" && typeof data.answer === "string") {
       return (

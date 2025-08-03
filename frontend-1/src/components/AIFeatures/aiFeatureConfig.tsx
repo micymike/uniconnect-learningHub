@@ -116,40 +116,26 @@ export interface AIFeature {
 
 export const aiFeatures: AIFeature[] = [
   // Study Tools
-  {
-    id: 'smart-study-assistant',
-    name: 'Smart Study Assistant',
-    description: 'Get instant answers to your questions with context-aware AI that understands your courses and learning progress.',
-    category: 'study',
-    icon: <FeatureIcons.StudyAssistant />,
-    path: '/ai/ask',
-    method: 'POST',
-    formTitle: 'Ask Your Study Question',
-    formDescription: 'Get personalized help with any topic or concept you\'re studying.',
-    fields: [
-      {
-        name: 'question',
-        label: 'Your Question',
-        type: 'textarea',
-        placeholder: 'What would you like to know? Be as specific as possible...',
-        required: true,
-        description: 'Ask about concepts, problems, or anything you\'re studying'
-      },
-      {
-        name: 'courseId',
-        label: 'Course (Optional)',
-        type: 'text',
-        placeholder: 'e.g., MATH101, CS201',
-        description: 'Help AI provide more relevant context'
-      },
-      {
-        name: 'lessonId',
-        label: 'Lesson/Chapter (Optional)',
-        type: 'text',
-        placeholder: 'e.g., Chapter 5, Lesson 3.2',
-      },
-    ]
-  },
+  // {
+  //   id: 'progress-tracker',
+  //   name: 'Learning Progress Tracker',
+  //   description: 'Track your learning progress, identify strengths and weaknesses, and get personalized recommendations.',
+  //   category: 'analytics',
+  //   method: 'GET',
+  //   path: '/ai/progress',
+  //   fields: [
+  //     {
+  //       name: 'studentId',
+  //       label: 'Student ID',
+  //       type: 'text',
+  //       required: true,
+  //     },
+  //   ],
+  //   formTitle: 'Your Learning Progress',
+  //   formDescription: 'Get insights into your learning journey and personalized recommendations.',
+  //   icon: '📈',
+  // },
+
   {
     id: 'multimodal-ai',
     name: 'Multimodal AI Helper',

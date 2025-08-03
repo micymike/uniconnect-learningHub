@@ -768,6 +768,21 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
     
     try {
       const scheduleData = JSON.parse(aiResponse);
+      // Save the generated schedule to the database
+      try {
+        const { error: insertError } = await this.supabase
+          .from('study_schedules')
+          .insert({
+            student_id: studentId,
+            schedule_data: scheduleData,
+            preferences: preferences || {},
+          });
+        if (insertError) {
+          console.error('Failed to save study schedule:', insertError);
+        }
+      } catch (dbErr) {
+        console.error('Database error saving study schedule:', dbErr);
+      }
       return scheduleData;
     } catch {
       // Fallback if JSON parsing fails
@@ -781,12 +796,7 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
   // Expense Tracking for Student Budgets
   async trackExpenses(
     studentId: string,
-    expenses: {
-      category: 'textbooks' | 'supplies' | 'food' | 'transport' | 'entertainment' | 'other';
-      amount: number;
-      description: string;
-      date: string;
-    }[],
+    expenses: any, // Accept any type for robust parsing
     monthlyBudget?: number,
   ): Promise<{
     summary: {
@@ -798,8 +808,74 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
     insights: string[];
     recommendations: string[];
   }> {
-    const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const categoryBreakdown = expenses.reduce((acc, expense) => {
+    // Robustly parse expenses to ensure it's an array of objects
+    let parsedExpenses: {
+      category: 'textbooks' | 'supplies' | 'food' | 'transport' | 'entertainment' | 'other';
+      amount: number;
+      description: string;
+      date: string;
+    }[] = [];
+
+    if (Array.isArray(expenses)) {
+      parsedExpenses = expenses;
+    } else if (typeof expenses === 'string') {
+      // Try to parse as JSON array
+      try {
+        const tryJson = JSON.parse(expenses);
+        if (Array.isArray(tryJson)) {
+          parsedExpenses = tryJson;
+        } else {
+          // Try to parse as line-separated values: "Textbooks $200, Food $150, ..."
+          parsedExpenses = expenses
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => {
+              // Example: "Textbooks $200" or "Food $150"
+              const match = line.match(/^([A-Za-z ]+)\s*\$?(\d+(\.\d+)?)/);
+              if (match) {
+                return {
+                  category: (match[1] || 'other').toLowerCase().replace(/\s+/g, '') as any,
+                  amount: parseFloat(match[2]),
+                  description: match[1].trim(),
+                  date: new Date().toISOString().slice(0, 10),
+                };
+              }
+              return null;
+            })
+            .filter(Boolean) as any[];
+        }
+      } catch {
+        // Fallback: try to parse as comma-separated values
+        parsedExpenses = expenses
+          .split(',')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => {
+            const match = line.match(/^([A-Za-z ]+)\s*\$?(\d+(\.\d+)?)/);
+            if (match) {
+              return {
+                category: (match[1] || 'other').toLowerCase().replace(/\s+/g, '') as any,
+                amount: parseFloat(match[2]),
+                description: match[1].trim(),
+                date: new Date().toISOString().slice(0, 10),
+              };
+            }
+            return null;
+          })
+          .filter(Boolean) as any[];
+      }
+    } else {
+      // Not an array or string
+      throw new Error('Expenses must be an array or a string.');
+    }
+
+    if (!Array.isArray(parsedExpenses) || parsedExpenses.length === 0) {
+      throw new Error('No valid expenses found. Please provide expenses as an array or formatted string.');
+    }
+
+    const totalSpent = parsedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const categoryBreakdown = parsedExpenses.reduce((acc, expense) => {
       acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
       return acc;
     }, {} as Record<string, number>);
