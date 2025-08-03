@@ -256,16 +256,6 @@ export class AIController {
   }
 
   // Explain Quiz Question
-  @Post('explain-quiz-question')
-  async explainQuizQuestion(
-    @Body('question') question: string,
-    @Body('answer') answer: string,
-  ): Promise<{ explanation: string }> {
-    const explanation = `The correct answer is "${answer}" because: This is a detailed explanation of why this answer is correct and how to approach similar questions.`;
-    return { explanation };
-  }
-
-  // Explain Quiz Question
   @UseGuards(JwtAuthGuard)
   @Post('explain-quiz-question')
   async explainQuizQuestion(
