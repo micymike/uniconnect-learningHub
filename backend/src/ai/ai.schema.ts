@@ -1,21 +1,13 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+/**
+ * TypeScript interface for StudentAIContext, matching the Supabase table structure.
+ * This replaces the previous Mongoose schema.
+ */
 
-export type StudentAIContextDocument = StudentAIContext & Document;
-
-@Schema({ timestamps: true })
-export class StudentAIContext {
-  @Prop({ type: Types.ObjectId, required: true, unique: true, ref: 'User' })
-  studentId: Types.ObjectId;
-
-  @Prop({ type: [String], default: [] })
-  conversationHistory: string[]; // Stores serialized Q&A or message objects
-
-  @Prop({ type: [String], default: [] })
-  flashcardPreferences: string[]; // Topics or tags for flashcard generation
-
-  @Prop({ type: Object, default: {} })
-  personalization: Record<string, any>; // Any additional personalization data
+export interface StudentAIContext {
+  student_id: string;
+  conversation_history: string[] | null;
+  flashcard_preferences: string[] | null;
+  personalization: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
 }
-
-export const StudentAIContextSchema = SchemaFactory.createForClass(StudentAIContext);

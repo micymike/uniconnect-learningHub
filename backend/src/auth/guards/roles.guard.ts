@@ -31,7 +31,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const { data: dbUser, error } = await this.supabase
-      .from('users')
+      .from('user_profiles')
       .select('role')
       .eq('id', user.sub)
       .single();

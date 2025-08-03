@@ -8,7 +8,7 @@ import { SectionsModule } from './sections/sections.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { AuthModule } from './auth/auth.module';
-//import { AIModule } from './ai/ai.module';
+import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -24,7 +24,7 @@ import { AuthModule } from './auth/auth.module';
     LessonsModule,
     QuizzesModule,
     AuthModule,
-   // AIModule,
+    AIModule,
   ],
   controllers: [],
   providers: [],

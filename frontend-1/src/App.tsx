@@ -9,6 +9,7 @@ import AdminCourses from './pages/AdminCourses';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
 import './App.css';
+import AIDemo from './pages/AIDemo';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem("token");
@@ -67,6 +68,7 @@ function App() {
           }
         />
         {/* Future routes for sections, lessons, quizzes, auth, etc. */}
+        <Route path="/ai-demo" element={<AIDemo />} />
       </Routes>
     </Router>
   );
