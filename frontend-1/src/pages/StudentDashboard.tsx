@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 
-const API_URL = process.env.VITE_API_URL || "http://localhost:3000/api";
+const API_URL = "http://localhost:3000/api";
 
 type Course = {
   _id?: string;
@@ -12,6 +12,12 @@ type Course = {
 const user = JSON.parse(localStorage.getItem("user") || "{}");
 
 export default function StudentDashboard() {
+
+  const fullName = user?.user_metadata?.full_name || 
+                user?.fullName || 
+                user?.email || 
+                "Student";
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,14 +47,14 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-4">
             <img
               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user.email || "Student"
+                user.full_name || "Student"
               )}&background=ff6600&color=fff`}
               alt="Avatar"
               className="w-12 h-12 rounded-full border-2 border-orange-400"
             />
             <div>
               <div className="text-lg font-bold text-black">
-                Welcome, {user.email || "Student"}
+                Welcome, {fullName}
               </div>
               <div className="text-sm text-gray-500 capitalize">
                 {user.role || "student"}
