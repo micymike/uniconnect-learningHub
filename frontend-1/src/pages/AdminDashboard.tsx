@@ -1,13 +1,24 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
+// Define admin navigation items with icons
+const adminNavItems = [
+  { label: "Dashboard", path: "/admin/dashboard", icon: "bx bx-home" },
+  { label: "Analytics", path: "/admin/analytics", icon: "bx bx-line-chart" },
+  { label: "Manage Courses", path: "/admin/courses", icon: "bx bx-book" },
+  { label: "Manage Quizzes", path: "/admin/quizzes", icon: "bx bx-edit" },
+  { label: "Manage Lessons", path: "/admin/lessons", icon: "bx bx-video" },
+  { label: "Manage Users", path: "/admin/users", icon: "bx bx-user" },
+];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Get user from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Extract full name from Supabase user_metadata
+  // Extract full name from  user_metadata
   const fullName = user?.user_metadata?.full_name || 
                   user?.fullName || 
                   user?.email || 
@@ -27,58 +38,45 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-black via-gray-900 to-gray-800">
-      {/* Sidebar */}
-      <aside className="w-64 bg-black text-white flex flex-col py-8 px-6 shadow-lg">
-        <div className="text-2xl font-bold mb-8 tracking-tight text-orange-400">
+      {/* Updated Sidebar */}
+      <aside className="w-64 bg-gray-900 text-white flex flex-col shadow-lg">
+        <div className="p-6 text-2xl font-bold text-orange-400 border-b border-gray-800">
           Admin Portal
         </div>
-        <nav className="flex flex-col gap-4">
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 transition font-semibold"
-            disabled
-          >
-            Dashboard
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
-            onClick={() => navigate("/admin/analytics")}
-          >
-            Analytics
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
-            onClick={() => navigate("/admin/courses")}
-          >
-            Manage Courses
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
-            onClick={() => navigate("/admin/quizzes")}
-          >
-            Manage Quizzes
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
-            onClick={() => navigate("/admin/lessons")}
-          >
-            Manage Lessons
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition"
-            onClick={() => navigate("/admin/users")}
-          >
-            Manage Users
-          </button>
+        <nav className="flex-1 p-4">
+          <ul className="space-y-4">
+            {adminNavItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  className={`flex items-center w-full px-3 py-2 rounded hover:bg-gray-800 transition text-left ${
+                    location.pathname === item.path ? "bg-gray-800" : ""
+                  }`}
+                  onClick={() => navigate(item.path)}
+                >
+                  <i className={`${item.icon} text-xl mr-3`}></i>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </nav>
-        <div className="mt-auto pt-8 text-xs text-gray-400">
+        <div className="p-4 border-t border-gray-800">
+          <button
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-semibold transition"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+        <div className="p-4 text-xs text-gray-400 border-t border-gray-800">
           &copy; {new Date().getFullYear()} UniConnect
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="bg-white shadow flex items-center justify-between px-8 py-4">
+        {/* Top Bar - Removed logout button */}
+        <header className="bg-white shadow flex items-center px-8 py-4">
           <div className="flex items-center gap-4">
             <img
               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -95,20 +93,6 @@ export default function AdminDashboard() {
                 {userRole}
               </div>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <button
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold shadow"
-              onClick={() => navigate("/admin/courses")}
-            >
-              Manage Courses
-            </button>
-            <button
-              className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium shadow"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
           </div>
         </header>
 
