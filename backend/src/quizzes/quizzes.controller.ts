@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { QuizzesService } from './quizzes.service';
 import { CreateQuizDto, UpdateQuizDto } from './dto/quizzes.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
@@ -26,19 +26,19 @@ export class QuizzesController {
   constructor(private readonly quizzesService: QuizzesService) {}
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard)
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.quizzesService.findOne(id);
   }
 
   @Get('lesson/:lessonId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard)
   async findByLesson(@Param('lessonId', ParseUUIDPipe) lessonId: string) {
     return this.quizzesService.findByLesson(lessonId);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createQuizDto: CreateQuizDto) {
@@ -46,7 +46,7 @@ export class QuizzesController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -56,7 +56,7 @@ export class QuizzesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string) {
