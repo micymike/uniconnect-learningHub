@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Courses from './pages/Courses';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
@@ -12,10 +12,9 @@ import './App.css';
 import AIDemo from './pages/AIDemo';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access_token");
   if (!token) {
-    window.location.href = "/login";
-    return null;
+    return <Navigate to="/login" replace />;
   }
   return children;
 }
