@@ -195,6 +195,9 @@ export class AIService {
     const endpoint = process.env.AZURE_API_BASE!;
     const apiKey = process.env.AZURE_API_KEY!;
 
+    // Use high token limit for comprehensive responses (128k for research assistant)
+    const maxTokens = prompt.includes('research assistant') || prompt.includes('JSON format') ? 32072 : 2048;
+
     const response = await axios.post(
       endpoint,
       {
@@ -202,7 +205,7 @@ export class AIService {
           { role: 'system', content: 'You are a helpful AI study partner.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 512,
+        max_tokens: maxTokens,
         temperature: 0.7,
       },
       {
@@ -967,19 +970,194 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
       `Topic: ${topic}`,
       `Assignment type: ${assignmentType}`,
       `Requirements: ${JSON.stringify(requirements)}`,
-      'Provide:',
-      '1. A detailed outline with sections and key points',
-      '2. Suggested academic sources (create realistic examples)',
-      '3. Writing tips specific to the assignment type',
-      '4. A timeline for completing the assignment',
-      `Format citations in ${requirements.citationStyle || 'APA'} style.`
+      'Your job is to provide a comprehensive, student-friendly research plan. Your response must be detailed, actionable, and easy to follow for a university student.',
+      'Respond ONLY in the following JSON format, with no extra text, make each part as detailed as possible:',
+      `{
+  "outline": {
+    "title": "Research on climate change",
+    "sections": [
+      {
+        "heading": "Introduction to Climate Change",
+        "keyPoints": [
+          "Definition and scope of climate change",
+          "Historical context and major events",
+          "Importance of studying climate change"
+        ],
+        "suggestedSources": 2
+      },
+      {
+        "heading": "Causes of Climate Change",
+        "keyPoints": [
+          "Greenhouse gas emissions",
+          "Deforestation and land use",
+          "Industrialization and human activity"
+        ],
+        "suggestedSources": 2
+      },
+      {
+        "heading": "Impacts of Climate Change",
+        "keyPoints": [
+          "Rising sea levels and extreme weather",
+          "Effects on biodiversity and ecosystems",
+          "Socioeconomic consequences"
+        ],
+        "suggestedSources": 2
+      },
+      {
+        "heading": "Mitigation and Adaptation Strategies",
+        "keyPoints": [
+          "Renewable energy solutions",
+          "Policy and international agreements",
+          "Community and individual actions"
+        ],
+        "suggestedSources": 2
+      },
+      {
+        "heading": "Conclusion and Future Directions",
+        "keyPoints": [
+          "Summary of key findings",
+          "Ongoing research and challenges",
+          "Call to action for further study"
+        ],
+        "suggestedSources": 1
+      }
+    ]
+  },
+  "sources": [
+    {
+      "title": "Climate Change 2022: Impacts, Adaptation and Vulnerability",
+      "authors": ["IPCC Working Group II"],
+      "year": 2022,
+      "type": "journal",
+      "citation": "IPCC Working Group II. (2022). Climate Change 2022: Impacts, Adaptation and Vulnerability. Cambridge University Press.",
+      "relevance": "Comprehensive review of climate change impacts and adaptation strategies."
+    },
+    {
+      "title": "The Discovery of Global Warming",
+      "authors": ["Spencer Weart"],
+      "year": 2008,
+      "type": "book",
+      "citation": "Weart, S. (2008). The Discovery of Global Warming. Harvard University Press.",
+      "relevance": "Historical perspective on climate science."
+    },
+    {
+      "title": "Renewable Energy Solutions for Climate Change",
+      "authors": ["Jane Doe"],
+      "year": 2021,
+      "type": "journal",
+      "citation": "Doe, J. (2021). Renewable Energy Solutions for Climate Change. Energy Policy Journal, 45(2), 123-145.",
+      "relevance": "Focuses on mitigation strategies."
+    }
+  ],
+  "writingTips": [
+    "Start each section with a clear topic sentence.",
+    "Use real-world examples to illustrate key points.",
+    "Cite all sources using APA style.",
+    "Break down complex ideas into simple language.",
+    "Conclude with a summary and recommendations for further research."
+  ],
+  "timeline": [
+    {
+      "phase": "Research Phase",
+      "duration": "3-5 days",
+      "tasks": [
+        "Conduct literature review",
+        "Collect and organize sources",
+        "Take detailed notes"
+      ]
+    },
+    {
+      "phase": "Planning Phase",
+      "duration": "1-2 days",
+      "tasks": [
+        "Draft outline",
+        "Map sources to outline sections",
+        "Plan writing schedule"
+      ]
+    },
+    {
+      "phase": "Writing Phase",
+      "duration": "5-7 days",
+      "tasks": [
+        "Write first draft section by section",
+        "Integrate citations and examples",
+        "Revise for clarity and flow"
+      ]
+    },
+    {
+      "phase": "Final Phase",
+      "duration": "2-3 days",
+      "tasks": [
+        "Proofread and edit",
+        "Format citations and references",
+        "Submit final paper"
+      ]
+    }
+  ]
+}`,
+      'Requirements:',
+      '- The outline must have at least 4-5 sections, each with 3+ key points.',
+      '- Provide at least 3 diverse, realistic sources with full citations.',
+      '- Give 5 or more actionable, student-friendly writing tips.',
+      '- Timeline should be broken into clear phases with actionable tasks.',
+      '- Write in a clear, supportive, student-friendly tone.',
+      `Format all citations in ${requirements.citationStyle || 'APA'} style.`,
+      'Do NOT include any explanation or extra text outside the JSON.'
     ].join('\n');
 
     const aiResponse = await this.callAzureOpenAI(prompt);
-    
-    // Parse the AI response (simplified - in production, use more robust parsing)
+
+    // Try to parse as JSON
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(aiResponse);
+    } catch {
+      // Fallback: try to extract JSON block from the response
+      const match = aiResponse.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {}
+      }
+    }
+
+    if (parsed && parsed.outline && parsed.sources && parsed.writingTips && parsed.timeline) {
+      // Validate and sanitize
+      return {
+        outline: {
+          title: parsed.outline.title || `Research on ${topic}`,
+          sections: Array.isArray(parsed.outline.sections)
+            ? parsed.outline.sections.map((s: any) => ({
+                heading: s.heading || '',
+                keyPoints: Array.isArray(s.keyPoints) ? s.keyPoints : [],
+                suggestedSources: typeof s.suggestedSources === 'number' ? s.suggestedSources : 3,
+              }))
+            : [],
+        },
+        sources: Array.isArray(parsed.sources)
+          ? parsed.sources.map((src: any) => ({
+              title: src.title || '',
+              authors: Array.isArray(src.authors) ? src.authors : [],
+              year: typeof src.year === 'number' ? src.year : 2023,
+              type: src.type || 'journal',
+              url: src.url,
+              citation: src.citation || '',
+              relevance: src.relevance || '',
+            }))
+          : [],
+        writingTips: Array.isArray(parsed.writingTips) ? parsed.writingTips : [],
+        timeline: Array.isArray(parsed.timeline)
+          ? parsed.timeline.map((t: any) => ({
+              phase: t.phase || '',
+              duration: t.duration || '',
+              tasks: Array.isArray(t.tasks) ? t.tasks : [],
+            }))
+          : [],
+      };
+    }
+
+    // Fallback: old logic if parsing fails
     const sections = aiResponse.split('\n').filter(line => line.includes('Section') || line.includes('Chapter'));
-    
     return {
       outline: {
         title: `Research on ${topic}`,

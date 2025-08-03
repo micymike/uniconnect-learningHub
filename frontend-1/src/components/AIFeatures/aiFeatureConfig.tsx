@@ -275,33 +275,33 @@ export const aiFeatures: AIFeature[] = [
       },
     ]
   },
-  {
-    id: 'notes-enhancer',
-    name: 'Notes Enhancer',
-    description: 'Transform messy lecture notes into organized, comprehensive study materials with key points and definitions.',
-    category: 'study',
-    icon: <FeatureIcons.NotesEnhancer />,
-    path: '/ai/enhance-notes',
-    method: 'POST',
-    formTitle: 'Enhance Your Notes',
-    formDescription: 'Transform raw notes into organized, comprehensive study materials.',
-    fields: [
-      {
-        name: 'notes',
-        label: 'Raw Notes',
-        type: 'textarea',
-        placeholder: 'Paste your lecture notes, rough notes, or any study material...',
-        required: true,
-      },
-      {
-        name: 'focusArea',
-        label: 'Subject/Topic',
-        type: 'text',
-        placeholder: 'e.g., Biology - Cell Structure, History - World War II',
-        description: 'Help AI provide subject-specific enhancements'
-      },
-    ]
-  },
+  // {
+  //   id: 'notes-enhancer',
+  //   name: 'Notes Enhancer',
+  //   description: 'Transform messy lecture notes into organized, comprehensive study materials with key points and definitions.',
+  //   category: 'study',
+  //   icon: <FeatureIcons.NotesEnhancer />,
+  //   path: '/ai/enhance-notes',
+  //   method: 'POST',
+  //   formTitle: 'Enhance Your Notes',
+  //   formDescription: 'Transform raw notes into organized, comprehensive study materials.',
+  //   fields: [
+  //     {
+  //       name: 'notes',
+  //       label: 'Raw Notes',
+  //       type: 'textarea',
+  //       placeholder: 'Paste your lecture notes, rough notes, or any study material...',
+  //       required: true,
+  //     },
+  //     {
+  //       name: 'focusArea',
+  //       label: 'Subject/Topic',
+  //       type: 'text',
+  //       placeholder: 'e.g., Biology - Cell Structure, History - World War II',
+  //       description: 'Help AI provide subject-specific enhancements'
+  //     },
+  //   ]
+  // },
   {
     id: 'research-assistant',
     name: 'Research Assistant',

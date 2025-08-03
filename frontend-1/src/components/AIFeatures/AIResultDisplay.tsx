@@ -155,6 +155,98 @@ const renderSpecializedResult = (data: any): React.ReactNode => {
       );
     }
 
+    // Handle research assistant data
+    if (data.outline && data.sources && data.writingTips && data.timeline) {
+      return (
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Research Plan</h3>
+          
+          {/* Outline Section */}
+          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-3">Research Outline</h4>
+            <h5 className="text-lg font-medium text-gray-900 mb-4">{data.outline.title}</h5>
+            <div className="space-y-4">
+              {data.outline.sections.map((section: any, index: number) => (
+                <div key={index} className="border-l-4 border-blue-300 pl-4">
+                  <h6 className="font-medium text-gray-800 mb-2">{section.heading}</h6>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    {section.keyPoints.map((point: string, pointIndex: number) => (
+                      <li key={pointIndex} className="flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-gray-500 mt-2">Suggested sources: {section.suggestedSources}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sources Section */}
+          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+            <h4 className="font-semibold text-green-800 mb-3">Recommended Sources</h4>
+            <div className="space-y-4">
+              {data.sources.map((source: any, index: number) => (
+                <div key={index} className="bg-white p-4 rounded border border-green-100">
+                  <h6 className="font-medium text-gray-900 mb-2">{source.title}</h6>
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Authors:</strong> {source.authors.join(', ')}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Year:</strong> {source.year} | <strong>Type:</strong> {source.type}
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 italic">{source.relevance}</p>
+                  <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded font-mono">
+                    {source.citation}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Writing Tips Section */}
+          <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+            <h4 className="font-semibold text-purple-800 mb-3">Writing Tips</h4>
+            <ul className="space-y-2">
+              {data.writingTips.map((tip: string, index: number) => (
+                <li key={index} className="flex items-start text-sm text-purple-700">
+                  <span className="text-purple-500 mr-2 font-bold">{index + 1}.</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Timeline Section */}
+          <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
+            <h4 className="font-semibold text-orange-800 mb-3">Project Timeline</h4>
+            <div className="space-y-4">
+              {data.timeline.map((phase: any, index: number) => (
+                <div key={index} className="flex items-start">
+                  <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-4">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <h6 className="font-medium text-gray-900">{phase.phase}</h6>
+                    <p className="text-sm text-orange-600 mb-2">{phase.duration}</p>
+                    <ul className="space-y-1">
+                      {phase.tasks.map((task: string, taskIndex: number) => (
+                        <li key={taskIndex} className="text-sm text-gray-700 flex items-start">
+                          <span className="text-orange-400 mr-2">▸</span>
+                          {task}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Handle progress data
     if (data.strengths && data.weaknesses && data.recommendations) {
       return (
