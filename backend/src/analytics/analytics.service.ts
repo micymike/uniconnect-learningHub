@@ -12,18 +12,18 @@ export class AnalyticsService {
     try {
       // number of platform users
       const { count: totalUsers } = await this.supabase
-        .from('users')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true });
 
       // number of students
       const { count: totalStudents } = await this.supabase
-        .from('users')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', UserRole.STUDENT);
 
       // number of admins
       const { count: totalAdmins } = await this.supabase
-        .from('users')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', UserRole.ADMIN);
 

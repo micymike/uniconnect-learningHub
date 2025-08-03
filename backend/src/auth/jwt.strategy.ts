@@ -17,16 +17,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-     //validate and fetch user
-    const { data: user } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('id', payload.sub)
-      .single();
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-    return user;
+    // Return user info directly from JWT payload
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.user_metadata?.role || 'student',
+      sub: payload.sub
+    };
   }
 }

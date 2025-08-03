@@ -14,7 +14,12 @@ const Courses: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/courses')
+    fetch(`${process.env.VITE_API_URL}/api/courses`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch courses');
         return res.json();

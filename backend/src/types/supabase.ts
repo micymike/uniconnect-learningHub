@@ -28,7 +28,7 @@ export type Database = {
             updated_at?: string
           }
         }
-        users: {
+        user_profiles: {
           Row: {
             id: string
             email: string
@@ -36,6 +36,32 @@ export type Database = {
             role: string
             created_at: string
             updated_at: string
+          }
+        },
+        student_ai_context: {
+          Row: {
+            student_id: string
+            conversation_history: string[] | null
+            flashcard_preferences: string[] | null
+            personalization: Record<string, any> | null
+            created_at: string
+            updated_at: string
+          }
+          Insert: {
+            student_id: string
+            conversation_history?: string[] | null
+            flashcard_preferences?: string[] | null
+            personalization?: Record<string, any> | null
+            created_at?: string
+            updated_at?: string
+          }
+          Update: {
+            student_id?: string
+            conversation_history?: string[] | null
+            flashcard_preferences?: string[] | null
+            personalization?: Record<string, any> | null
+            created_at?: string
+            updated_at?: string
           }
         }
       }

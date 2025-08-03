@@ -111,8 +111,14 @@ export class AuthService {
         console.error('Profile fetch error:', profileError);
       }
 
+      // Merge user and profile so frontend can access user.role
+      const mergedUser = {
+        ...data.user,
+        ...(profile || {}),
+      };
+
       return {
-        user: data.user,
+        user: mergedUser,
         session: data.session,
         profile: profile || null,
         access_token: data.session.access_token,

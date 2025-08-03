@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const endpoint = isRegister ? "/auth/register" : "/auth/login";
+      const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
       const res = await fetch(API_URL + endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

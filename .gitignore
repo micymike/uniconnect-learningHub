@@ -1,1 +1,3 @@
 node_modules
+frontend-1/src/.env
+backend/src/ai/database-setup.sql

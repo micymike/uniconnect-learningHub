@@ -1,15 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AIService } from './ai.service';
 import { AIController } from './ai.controller';
-import { StudentAIContext, StudentAIContextSchema } from './ai.schema';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: StudentAIContext.name, schema: StudentAIContextSchema },
-    ]),
-  ],
+  imports: [SupabaseModule],
   providers: [AIService],
   controllers: [AIController],
   exports: [AIService],
