@@ -1,15 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import "boxicons/css/boxicons.min.css"; // Make sure this is loaded once globally
 
 const navItems = [
-  { label: "Dashboard", path: "/student/dashboard", icon: "🏠" },
-  { label: "Courses", path: "/student/courses", icon: "📚" },
-  { label: "Profile", path: "/student/profile", icon: "👤" },
-  { label: "AI Assistant", path: "/ai-demo", icon: "🤖" },
-  { label: "Settings", path: "/student/settings", icon: "⚙️" },
-  { label: "Help", path: "/student/help", icon: "❓" },
-  { label: "Feedback", path: "/student/feedback", icon: "📝" },
-  { label: "Logout", path: "/login", icon: "🚪" }
+  { label: "Dashboard", path: "/student/dashboard", icon: "bx bx-home" },
+  { label: "Courses", path: "/student/courses", icon: "bx bx-book" },
+  { label: "Profile", path: "/student/profile", icon: "bx bx-user" },
+  { label: "AI Assistant", path: "/ai-demo", icon: "bx bx-bot" },
+  { label: "Settings", path: "/student/settings", icon: "bx bx-cog" },
+  { label: "Help", path: "/student/help", icon: "bx bx-help-circle" },
+  { label: "Feedback", path: "/student/feedback", icon: "bx bx-message-detail" },
 ];
 
 export default function Sidebar() {
@@ -34,7 +34,7 @@ export default function Sidebar() {
                 className="flex items-center w-full px-3 py-2 rounded hover:bg-gray-800 transition text-left"
                 onClick={() => navigate(item.path)}
               >
-                <span className="mr-3 text-lg">{item.icon}</span>
+                <i className={`${item.icon} text-xl mr-3`}></i>
                 <span>{item.label}</span>
               </button>
             </li>

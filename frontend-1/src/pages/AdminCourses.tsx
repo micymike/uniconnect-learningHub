@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3000/api";
 
 type Course = {
   _id?: string;
