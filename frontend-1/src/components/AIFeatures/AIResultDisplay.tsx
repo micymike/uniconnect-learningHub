@@ -155,6 +155,101 @@ const renderSpecializedResult = (data: any): React.ReactNode => {
       );
     }
 
+    // Handle assignment feedback data
+    if (data.feedback && typeof data.feedback === 'string') {
+      const feedback = data.feedback;
+      const sections = feedback.split('**').filter((section: string) => section.trim());
+      
+      return (
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment Feedback</h3>
+          
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+            {sections.map((section: string, index: number) => {
+              const lines = section.split('\n').filter((line: string) => line.trim());
+              if (lines.length === 0) return null;
+              
+              const isHeader = lines[0] && !lines[0].startsWith('-') && !lines[0].startsWith('  -') && lines[0].includes(':');
+              
+              if (isHeader) {
+                const header = lines[0].replace(':', '').trim();
+                const content = lines.slice(1);
+                
+                return (
+                  <div key={index} className="mb-6">
+                    <h4 className="font-semibold text-blue-800 mb-3 text-lg">{header}</h4>
+                    <div className="space-y-2">
+                      {content.map((line: string, lineIndex: number) => {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine) return null;
+                        
+                        if (trimmedLine.startsWith('- **') && trimmedLine.includes(':**')) {
+                          const subHeader = trimmedLine.replace('- **', '').replace(':**', '').trim();
+                          return (
+                            <h5 key={lineIndex} className="font-medium text-gray-800 mt-4 mb-2">{subHeader}</h5>
+                          );
+                        }
+                        
+                        if (trimmedLine.startsWith('  - ')) {
+                          return (
+                            <li key={lineIndex} className="text-gray-700 ml-6 list-disc">
+                              {trimmedLine.replace('  - ', '')}
+                            </li>
+                          );
+                        }
+                        
+                        if (trimmedLine.startsWith('- **') && trimmedLine.includes(':**')) {
+                          return (
+                            <h5 key={lineIndex} className="font-medium text-gray-800 mt-3 mb-2">
+                              {trimmedLine.replace('- **', '').replace(':**', '')}
+                            </h5>
+                          );
+                        }
+                        
+                        if (trimmedLine.match(/^\d+\./)) {
+                          return (
+                            <div key={lineIndex} className="flex items-start mt-2">
+                              <span className="text-blue-600 font-semibold mr-2">
+                                {trimmedLine.match(/^\d+/)?.[0]}.
+                              </span>
+                              <span className="text-gray-700">
+                                {trimmedLine.replace(/^\d+\.\s*/, '')}
+                              </span>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <p key={lineIndex} className="text-gray-700 leading-relaxed">
+                            {trimmedLine}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div key={index} className="mb-4">
+                    {lines.map((line: string, lineIndex: number) => {
+                      const trimmedLine = line.trim();
+                      if (!trimmedLine) return null;
+                      
+                      return (
+                        <p key={lineIndex} className="text-gray-700 leading-relaxed mb-2">
+                          {trimmedLine}
+                        </p>
+                      );
+                    })}
+                  </div>
+                );
+              }
+            })}
+          </div>
+        </div>
+      );
+    }
+
     // Handle research assistant data
     if (data.outline && data.sources && data.writingTips && data.timeline) {
       return (
