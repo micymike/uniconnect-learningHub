@@ -250,6 +250,138 @@ const renderSpecializedResult = (data: any): React.ReactNode => {
       );
     }
 
+// Handle smart study scheduler data
+if (
+  data.schedule !== undefined &&
+  Array.isArray(data.recommendations) &&
+  typeof data.recommendations[0] === "string" &&
+  data.recommendations[0].includes("study_plan")
+) {
+  // Extract JSON code block and notes
+  const rec = data.recommendations[0];
+  // Match the code block (```json ... ```)
+  const codeBlockMatch = rec.match(/```json\s*([\s\S]*?)```/);
+  let studyData = null;
+  if (codeBlockMatch) {
+    try {
+      studyData = JSON.parse(codeBlockMatch[1]);
+    } catch (e) {
+      console.error("Failed to parse study plan JSON:", e);
+    }
+  }
+  // Extract notes after the code block
+  const notesMatch = rec.split("```").slice(2).join("```").trim();
+  // Split notes into lines, remove empty, and remove "**Notes:**" if present
+  const notesLines = notesMatch
+    .replace(/^\*\*Notes:\*\*\s*/, "")
+    .split(/\n|  - /)
+    .map((line) => line.replace(/^\s*-\s*/, "").trim())
+    .filter((line) => line.length > 0);
+
+  if (studyData && Array.isArray(studyData.study_plan)) {
+    return (
+      <div className="space-y-8">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Study Schedule</h3>
+
+        {/* Study Plan */}
+        <div>
+          <h4 className="text-lg font-semibold text-gray-800 mb-3">📅 Study Plan</h4>
+          <div className="space-y-4">
+            {studyData.study_plan.map((day: any, idx: number) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200"
+              >
+                <div className="flex items-center mb-3">
+                  <span className="text-lg font-semibold text-green-700">
+                    {new Date(day.date).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {day.blocks.map((block: any, blockIdx: number) => (
+                    <div
+                      key={blockIdx}
+                      className={`rounded-md p-3 border ${
+                        block.course === "Rest"
+                          ? "bg-yellow-50 border-yellow-200"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          {block.time}
+                        </span>
+                        <span
+                          className={`text-sm font-medium px-2 py-1 rounded capitalize ${
+                            block.course === "Rest"
+                              ? "text-yellow-700 bg-yellow-100"
+                              : "text-purple-600 bg-purple-100"
+                          }`}
+                        >
+                          {block.course}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed">{block.task}</p>
+                      {block.notes && (
+                        <p className="text-gray-500 text-xs mt-1">{block.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Spaced Repetition & Wellness */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {studyData.spaced_repetition && (
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2">🔁 Spaced Repetition Strategy</h4>
+              <p className="text-blue-700 text-sm mb-2">{studyData.spaced_repetition.strategy}</p>
+              <ul className="list-disc ml-5 text-blue-700 text-sm">
+                {studyData.spaced_repetition.tools.map((tool: string, i: number) => (
+                  <li key={i}>{tool}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {studyData.wellness && (
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">🌱 Wellness & Review</h4>
+              <p className="text-green-700 text-sm mb-1">
+                <strong>Breaks:</strong> {studyData.wellness.breaks}
+              </p>
+              <p className="text-green-700 text-sm">
+                <strong>Review Sessions:</strong> {studyData.wellness.review_sessions}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Notes */}
+        {notesLines.length > 0 && (
+          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+            <h4 className="font-medium text-yellow-800 mb-2">📝 Notes</h4>
+            <ul className="list-disc ml-5 text-yellow-700 text-sm">
+              {notesLines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
     // Handle research assistant data
     if (data.outline && data.sources && data.writingTips && data.timeline) {
       return (
