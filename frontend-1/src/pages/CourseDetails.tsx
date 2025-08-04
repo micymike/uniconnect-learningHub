@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:3000/api";
+
+const API_URL = "http://localhost:3004";
 
 type Course = {
   _id?: string;

@@ -6,7 +6,7 @@ import AIFeatureForm from "../components/AIFeatures/AIFeatureForm";
 import AIResultDisplay from "../components/AIFeatures/AIResultDisplay";
 import { aiFeatures, categoryInfo, AIFeature } from "../components/AIFeatures/aiFeatureConfig";
 
-const API_BASE = process.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE = process.env.VITE_API_URL || "http://localhost:3004/api";
 
 function AIDemo() {
   const navigate = useNavigate();

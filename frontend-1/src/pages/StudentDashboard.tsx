@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 
-const API_URL = "http://localhost:3000/api";
+
+const API_URL = process.env.VITE_API_URL || "http://localhost:3004/api";
 
 type Course = {
   _id?: string;

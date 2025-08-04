@@ -39,7 +39,7 @@ async function bootstrap() {
     }),
   );
 
-  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3001'];
+  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'];
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -47,7 +47,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = configService.get('PORT') || 3000;
+  const port = configService.get('PORT') || 3004;   
   await app.listen(port);
 
   console.log(`Application is running on: http://localhost:${port}/api`);

@@ -28,7 +28,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') { // PGRST116: No rows found
       throw error;
@@ -45,7 +45,7 @@ export class AIService {
           personalization: {},
         })
         .select('*')
-        .single();
+        .maybeSingle();
       if (insertError) throw insertError;
       context = newContext;
     }
@@ -83,7 +83,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -114,7 +114,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       throw error;
@@ -246,7 +246,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const history = context?.conversation_history || [];
@@ -355,7 +355,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const history = context?.conversation_history || [];
@@ -405,7 +405,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -433,7 +433,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -462,7 +462,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -491,7 +491,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -520,7 +520,7 @@ export class AIService {
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -688,7 +688,7 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const preferences = context?.flashcard_preferences || [];
@@ -737,7 +737,7 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const history = context?.conversation_history || [];
@@ -870,7 +870,7 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     const predictions = courses.map(course => {
@@ -1148,7 +1148,7 @@ Tags: ${analysis.tags?.map((tag: any) => tag.name).join(', ') || 'None detected'
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
     const preferences = context?.flashcard_preferences || [];
 
     const prompt = [
