@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "http://localhost:3004";
 
 type Summary = {
   totalUsers: number;
