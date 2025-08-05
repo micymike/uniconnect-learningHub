@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
+const API_URL = "http://localhost:3004/api"
 type Course = {
   _id: string;
   title: string;
@@ -14,7 +14,7 @@ const Courses: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.VITE_API_URL}/api/courses`, {
+    fetch(`${API_URL}/api/courses`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
