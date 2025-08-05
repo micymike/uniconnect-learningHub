@@ -21,7 +21,7 @@ export default function AnalyticsDashboard() {
     const token = localStorage.getItem("token");
     setLoading(true);
     setError("");
-    fetch(`${API_URL}/analytics/summary`, {
+    fetch(`${API_URL}/analytics/dashboard`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
