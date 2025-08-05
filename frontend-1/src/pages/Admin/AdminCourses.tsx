@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Toast from "../components/Toast";
+import Toast from "./../../components/Toast";
 
 
-const API_URL = "http://localhost:3004";
+const API_URL = "http://localhost:3004/api";
 type Course = {
   _id?: string;
   title: string;
@@ -130,29 +130,6 @@ export default function AdminCourses() {
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-black text-white flex flex-col py-8 px-6 shadow-lg">
-        <div className="text-2xl font-bold mb-8 tracking-tight text-orange-400">
-          Admin Portal
-        </div>
-        <nav className="flex flex-col gap-4">
-          <button
-            className="text-left py-2 px-4 rounded hover:bg-gray-800 transition"
-            onClick={() => navigate("/admin")}
-          >
-            Dashboard
-          </button>
-          <button
-            className="text-left py-2 px-4 rounded bg-orange-500 hover:bg-orange-600 transition font-semibold"
-            disabled
-          >
-            Manage Courses
-          </button>
-        </nav>
-        <div className="mt-auto pt-8 text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} UniConnect
-        </div>
-      </aside>
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}

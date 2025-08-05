@@ -3,15 +3,15 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Courses from './pages/Courses';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
-import AdminCourses from './pages/AdminCourses';
+import AdminCourses from './pages/Admin/AdminCourses';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
 import StudentDashboard from './pages/StudentDashboard';
 import './App.css';
 import AIDemo from './pages/AIDemo';
-import LessonsPage from './pages/Lessons';
-import AdminLayout from './pages/AdminLayout';
-import AdminDashboard from './pages/AdminDashboard';
+import LessonsPage from './pages/Admin/Lessons';
+import AdminLayout from './pages/Admin/AdminLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem("access_token");
