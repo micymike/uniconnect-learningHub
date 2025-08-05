@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import "boxicons/css/boxicons.min.css"; // Make sure this is loaded once globally
 
 const navItems = [
-  { label: "Dashboard", path: "/student/dashboard", icon: "bx bx-home" },
-  { label: "Courses", path: "/student/courses", icon: "bx bx-book" },
-  { label: "Profile", path: "/student/profile", icon: "bx bx-user" },
-  { label: "AI Assistant", path: "/ai-demo", icon: "bx bx-bot" },
-  { label: "Settings", path: "/student/settings", icon: "bx bx-cog" },
-  { label: "Help", path: "/student/help", icon: "bx bx-help-circle" },
-  { label: "Feedback", path: "/student/feedback", icon: "bx bx-message-detail" },
+  { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
+  { label: "Courses", path: "courses", icon: "bx bx-book" },
+  { label: "Profile", path: "profile", icon: "bx bx-user" },
+  { label: "AI Assistant", path: "ai-demo", icon: "bx bx-bot" },
+  { label: "Settings", path: "settings", icon: "bx bx-cog" },
+  { label: "Help", path: "help", icon: "bx bx-help-circle" },
+  { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
 ];
 
 export default function Sidebar() {
