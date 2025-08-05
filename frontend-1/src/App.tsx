@@ -6,13 +6,14 @@ import Login from './pages/Login';
 import AdminCourses from './pages/Admin/AdminCourses';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
-import StudentDashboard from './pages/StudentDashboard';
+import StudentDashboard from './pages/Student/StudentDashboard';
 import './App.css';
-import AIDemo from './pages/AIDemo';
+import AIDemo from './pages/Student/AIDemo';
 import LessonsPage from './pages/Admin/Lessons';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QuizzesPage from './pages/Admin/Quizzes';
+import StudentDashboardLayout from './pages/Student/StudentDashboardLayout';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem("access_token");
@@ -52,20 +53,23 @@ function App() {
           path="/student"
           element={
             <RequireAuth>
-              <StudentDashboard />
+              <StudentDashboardLayout />
             </RequireAuth>
           }
-        />
-        <Route
-          path="/student/courses/:id"
-          element={
-            <RequireAuth>
-              <CourseDetails />
-            </RequireAuth>
-          }
-        />
+        >
+          {/* Student nested routes */}
+          <Route index element={<StudentDashboard />} />
+          <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="courses/:id" element={<CourseDetails />} />
+          <Route path="ai-demo" element={<AIDemo />} />
+          <Route path="profile" element={<div>ProfilePage </div>} />
+          <Route path="settings" element={<div>Settings Page</div>} />
+          <Route path="help" element={<div>Help Page</div>} />
+          <Route path="feedback" element={<div>Feedback Page</div>} />
+        </Route>
         
-        <Route path="/ai-demo" element={<AIDemo />} />
+        
       </Routes>
     </Router>
   );

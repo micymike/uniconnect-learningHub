@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import AIFeatureCard from "../components/AIFeatures/AIFeatureCard";
-import AIFeatureForm from "../components/AIFeatures/AIFeatureForm";
-import AIResultDisplay from "../components/AIFeatures/AIResultDisplay";
-import { aiFeatures, categoryInfo, AIFeature } from "../components/AIFeatures/aiFeatureConfig";
+import AIFeatureCard from "../../components/AIFeatures/AIFeatureCard";
+import AIFeatureForm from "../../components/AIFeatures/AIFeatureForm";
+import AIResultDisplay from "../../components/AIFeatures/AIResultDisplay";
+import { aiFeatures, categoryInfo, AIFeature } from "../../components/AIFeatures/aiFeatureConfig";
 
 const API_BASE = process.env.VITE_API_URL || "http://localhost:3004/api";
 
