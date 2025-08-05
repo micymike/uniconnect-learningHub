@@ -12,6 +12,7 @@ import AIDemo from './pages/AIDemo';
 import LessonsPage from './pages/Admin/Lessons';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import QuizzesPage from './pages/Admin/Quizzes';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem("access_token");
@@ -42,6 +43,7 @@ function App() {
           <Route path="courses" element={<AdminCourses />} />
           <Route path="lessons" element={<LessonsPage />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
           {/* Add other admin routes here */}
         </Route>
         
