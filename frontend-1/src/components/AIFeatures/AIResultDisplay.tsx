@@ -274,7 +274,29 @@ const renderSpecializedResult = (data: any): React.ReactNode => {
       );
     }
 
-    // Default JSON display for other types
+    // Default: Render unknown objects as a key-value table if possible, else JSON
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return (
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Result</h3>
+          <table className="min-w-full text-sm text-gray-800">
+            <tbody>
+              {Object.entries(data).map(([key, value]) => (
+                <tr key={key} className="border-b last:border-b-0">
+                  <td className="font-medium pr-4 py-2 align-top capitalize">{key}</td>
+                  <td className="py-2">
+                    {typeof value === "object" && value !== null
+                      ? <pre className="whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</pre>
+                      : String(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    // Fallback: show JSON for unstructured data
     return (
       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
         <pre className="text-sm text-gray-800 whitespace-pre-wrap overflow-x-auto">
