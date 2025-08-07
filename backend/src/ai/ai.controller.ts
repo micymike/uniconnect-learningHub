@@ -15,7 +15,7 @@ export class AIController {
     @Body('interests') interests?: string,
     @Body('goals') goals?: string,
   ): Promise<{ suggestions: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.collaborationHelper(userId, courseId, interests, goals);
   }
 
@@ -28,7 +28,7 @@ export class AIController {
     @Body('imageBase64') imageBase64?: string,
     @Body('audioBase64') audioBase64?: string,
   ): Promise<{ answer: string; audioResponse?: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.askMultimodal(userId, question, imageBase64, audioBase64);
   }
 
@@ -40,7 +40,7 @@ export class AIController {
     @Body('mood') mood?: string,
     @Body('context') context?: string,
   ): Promise<{ message: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.motivation(userId, mood, context);
   }
 
@@ -52,7 +52,7 @@ export class AIController {
     @Body('text') text: string,
     @Body('assignmentType') assignmentType?: string,
   ): Promise<{ feedback: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.getFeedback(userId, text, assignmentType);
   }
 
@@ -64,7 +64,7 @@ export class AIController {
     @Body('text') text: string,
     @Body('type') type?: string, // e.g., 'article', 'lecture', 'video'
   ): Promise<{ summary: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.summarize(userId, text, type);
   }
 
@@ -77,7 +77,7 @@ export class AIController {
     @Body('deadlines') deadlines?: string,
     @Body('goals') goals?: string,
   ): Promise<{ suggestions: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.timeManagement(userId, habits, deadlines, goals);
   }
 
@@ -91,7 +91,7 @@ export class AIController {
     @Body('lessonId') lessonId?: string,
     @Body('sectionId') sectionId?: string,
   ): Promise<{ answer: string }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     const answer = await this.aiService.answerQuestion(userId, question, courseId, lessonId, sectionId);
     return { answer };
   }
@@ -106,7 +106,7 @@ export class AIController {
     @Body('pastQuestions') pastQuestions?: string,
     @Body('focusArea') focusArea?: string,
   ): Promise<{ question: string; answer: string }[]> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.getFlashcards(userId, notes, lecture, pastQuestions, focusArea);
   }
 
@@ -117,7 +117,7 @@ export class AIController {
     @Req() req,
     @Body('preferences') preferences: string[],
   ): Promise<{ success: boolean }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     await this.aiService.updatePreferences(userId, preferences);
     return { success: true };
   }
@@ -132,7 +132,7 @@ export class AIController {
     @Body('focusArea') focusArea?: string,
     @Body('difficulty') difficulty?: string,
   ): Promise<{ questions: { question: string; options: string[]; answer: string }[] }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.generateQuiz(userId, courseId, lessonId, focusArea, difficulty);
   }
 
@@ -142,7 +142,7 @@ export class AIController {
   async getProgress(
     @Req() req,
   ): Promise<{ strengths: string[]; weaknesses: string[]; recommendations: string[] }> {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.getProgress(userId);
   }
 
@@ -163,7 +163,7 @@ export class AIController {
       weekendStudy?: boolean;
     },
   ) {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.generateStudySchedule(userId, courses, assignments, exams, preferences);
   }
 
@@ -180,8 +180,10 @@ export class AIController {
     }[],
     @Body('monthlyBudget') monthlyBudget?: number,
   ) {
-    const userId = req.user.id || req.user.sub;
-    return this.aiService.trackExpenses(userId, expenses, monthlyBudget);
+    const userId = req.user.userId;
+    // Accept both a single object and an array for expenses
+    const normalizedExpenses = Array.isArray(expenses) ? expenses : expenses ? [expenses] : [];
+    return this.aiService.trackExpenses(userId, normalizedExpenses, monthlyBudget);
   }
 
   // Grade Prediction and GPA Calculator
@@ -199,7 +201,7 @@ export class AIController {
       attendance: number;
     }[],
   ) {
-    const userId = req.user.id || req.user.sub;
+    const userId = req.user.userId;
     return this.aiService.predictGrades(userId, courses);
   }
 

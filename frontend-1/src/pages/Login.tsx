@@ -55,7 +55,7 @@ export default function Login() {
           throw new Error("Authentication tokens missing");
         }
 
-        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("token", accessToken);
         localStorage.setItem("refresh_token", refreshToken);
         localStorage.setItem("user", JSON.stringify(data.user));
         

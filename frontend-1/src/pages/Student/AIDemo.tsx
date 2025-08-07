@@ -105,8 +105,43 @@ function AIDemo() {
         }
         throw new Error(data.message || `HTTP error! status: ${res.status}`);
       }
-      
-      setResult(data);
+
+      // --- QUIZ PARSING LOGIC ---
+      // If the feature is quiz and the response is a string, try to parse it
+      if (
+        activeFeature?.id === "adaptive-quiz" &&
+        typeof data === "string" &&
+        (data.includes("Correct Answer:") || data.includes("**Correct Answer:**"))
+      ) {
+        // Parse Markdown-style quiz
+        const quizRegex = /(?:\*\*|\d+\.)\s*([^\n*]+)\*\*\n([A-D]\))\s*([^\n]+)\n([A-D]\))\s*([^\n]+)\n([A-D]\))\s*([^\n]+)\n([A-D]\))\s*([^\n]+)\n\*\*Correct Answer:\*\*\s*([A-D])\)[^\n]*/g;
+        // Fallback: more robust parser for multiple questions
+        const questionBlocks = data.split(/-{3,}/g).map(q => q.trim()).filter(Boolean);
+        const questions = questionBlocks.map(block => {
+          // Question
+          const qMatch = block.match(/^\*?\*?\d+\.\s*([^\n*]+)\*?\*?/m);
+          const question = qMatch ? qMatch[1].trim() : "";
+          // Options
+          const options: string[] = [];
+          for (let opt of ["A", "B", "C", "D"]) {
+            const optMatch = block.match(new RegExp(`${opt}\\)\\s*([^\\n]+)`));
+            options.push(optMatch ? optMatch[1].trim() : "");
+          }
+          // Answer
+          const ansMatch = block.match(/\*\*Correct Answer:\*\*\s*([A-D])\)/);
+          const answer = ansMatch
+            ? options["ABCD".indexOf(ansMatch[1])]
+            : "";
+          if (question && options.filter(Boolean).length === 4 && answer) {
+            return { question, options, answer };
+          }
+          return null;
+        }).filter(Boolean);
+
+        setResult({ questions });
+      } else {
+        setResult(data);
+      }
     } catch (err) {
       // If unauthorized, redirect to login
       if (
