@@ -335,33 +335,20 @@ const QuizzesPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
-      {/* Navigation Bar */}
-      <nav className="bg-indigo-800 text-white shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="bg-indigo-600 p-2 rounded-lg mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold">Quizz Master</h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {currentUser && (
-              <div className="flex items-center">
-                <div className="bg-indigo-600 w-8 h-8 rounded-full flex items-center justify-center mr-2">
-                  {currentUser.fullName.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-medium text-sm">{currentUser.fullName}</p>
-                  <p className="text-xs text-indigo-300 capitalize">{currentUser.role}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+     {/* Navigation Bar */}
+<nav className="bg-indigo-800 text-white shadow-lg">
+  <div className="max-w-6xl mx-auto px-4 py-4 flex justify-center items-center">
+    <div className="flex items-center space-x-3">
+      <div className="bg-indigo-600 p-2 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h1 className="text-3xl font-extrabold">Quizz Master</h1>
+    </div>
+  </div>
+</nav>
+
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto p-4 md:p-8">
