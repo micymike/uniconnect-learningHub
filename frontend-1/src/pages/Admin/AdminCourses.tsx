@@ -4,9 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = "http://localhost:3004/api";
 type Course = {
-  _id?: string;
+  id?: string;  // Changed from _id to id to match backend
   title: string;
   description: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
 };
 
 // Toast Component
@@ -56,20 +59,75 @@ export default function AdminCourses() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // Check for token and redirect if not found
   const token = localStorage.getItem("token");
+  
+  // Add token debugging
+  useEffect(() => {
+    console.log("Current token:", token ? `${token.substring(0, 20)}...` : "No token");
+    if (token) {
+      try {
+        // Try to decode JWT payload (without verification)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log("Token payload:", payload);
+        console.log("Token expires:", new Date(payload.exp * 1000));
+        console.log("Current time:", new Date());
+      } catch (e) {
+        console.error("Invalid token format:", e);
+      }
+    }
+  }, [token]);
+  
+  useEffect(() => {
+    if (!token) {
+      setToast({ message: "Please log in to access this page", type: "error" });
+      navigate("/login"); // Adjust the login route as needed
+      return;
+    }
+  }, [token, navigate]);
 
   const fetchCourses = async () => {
+    if (!token) return;
+    
     setLoading(true);
     setError("");
     try {
+      console.log("Fetching courses with token:", token ? "Token present" : "No token"); // Debug log
+      
       const res = await fetch(API_URL + "/courses", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
       });
-      if (!res.ok) throw new Error((await res.json()).message || "Error");
+      
+      console.log("Fetch courses response status:", res.status); // Debug log
+      
+      if (res.status === 401) {
+        console.error("401 Unauthorized when fetching courses");
+        setToast({ message: "Session expired. Please log in again.", type: "error" });
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      
+      if (res.status === 403) {
+        console.error("403 Forbidden when fetching courses");
+        setToast({ message: "You don't have permission to view courses.", type: "error" });
+        return;
+      }
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Network error" }));
+        throw new Error(errorData.message || `Error: ${res.status}`);
+      }
+      
       const data = await res.json();
+      console.log("Fetched courses:", data); // Debug log
       setCourses(data);
       setFiltered(data);
     } catch (err: any) {
+      console.error("Fetch courses error:", err);
       setError(err.message);
       setToast({ message: err.message, type: "error" });
     } finally {
@@ -96,8 +154,9 @@ export default function AdminCourses() {
     setModalMode(mode);
     setShowModal(true);
     if (mode === "edit" && course) {
+      console.log("Editing course:", course); // Debug log
       setForm({ title: course.title, description: course.description });
-      setEditingId(course._id || null);
+      setEditingId(course.id || null);  // Changed from course._id to course.id
     } else {
       setForm({ title: "", description: "" });
       setEditingId(null);
@@ -112,6 +171,12 @@ export default function AdminCourses() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!token) {
+      setToast({ message: "Please log in to perform this action", type: "error" });
+      return;
+    }
+    
     setLoading(true);
     setError("");
     try {
@@ -119,21 +184,58 @@ export default function AdminCourses() {
       const endpoint = modalMode === "edit"
         ? `/courses/${editingId}`
         : "/courses";
+        
+      console.log(`${method} request to:`, API_URL + endpoint);
+      console.log("Form data:", form); // Debug log
+      console.log("Token being sent:", token ? "Token present" : "No token"); // Debug log
+      
       const res = await fetch(API_URL + endpoint, {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` },
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error((await res.json()).message || "Error");
-      setToast({
-        message: modalMode === "edit" ? "Course updated!" : "Course created!",
-        type: "success",
-      });
-      closeModal();
-      fetchCourses();
+      
+      console.log("Response status:", res.status); // Debug log
+      console.log("Response headers:", Object.fromEntries(res.headers.entries())); // Debug log
+      
+      
+      if (res.ok) {
+        // Success case
+        setToast({
+          message: modalMode === "edit" ? "Course updated!" : "Course created!",
+          type: "success",
+        });
+        closeModal();
+        fetchCourses();
+        return;
+      }
+      
+      // Only handle auth errors if the request actually failed
+      if (res.status === 401) {
+        const errorData = await res.json().catch(() => ({ message: "Unauthorized" }));
+        console.error("Authentication error:", errorData);
+        setToast({ message: "Session expired. Please log in again.", type: "error" });
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      
+      if (res.status === 403) {
+        const errorData = await res.json().catch(() => ({ message: "Forbidden" }));
+        console.error("Authorization error:", errorData);
+        setToast({ message: "You don't have permission to perform this action.", type: "error" });
+        return;
+      }
+      
+      // Handle other errors
+      const errorData = await res.json().catch(() => ({ message: "Network error" }));
+      throw new Error(errorData.message || `Error: ${res.status}`);
+      
     } catch (err: any) {
+      console.error("Submit error:", err);
       setError(err.message);
       setToast({ message: err.message, type: "error" });
     } finally {
@@ -142,24 +244,63 @@ export default function AdminCourses() {
   };
 
   const handleDelete = async (id: string) => {
+    // Validate ID before proceeding
+    if (!id || id === 'undefined') {
+      setToast({ message: "Invalid course ID", type: "error" });
+      console.error("Invalid course ID:", id);
+      return;
+    }
+    
+    if (!token) {
+      setToast({ message: "Please log in to perform this action", type: "error" });
+      return;
+    }
+    
     if (!window.confirm("Delete this course?")) return;
+    
     setLoading(true);
     setError("");
     try {
+      console.log("Deleting course with ID:", id); // Debug log
+      
       const res = await fetch(API_URL + `/courses/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
       });
-      if (!res.ok) throw new Error((await res.json()).message || "Error");
-      setToast({ message: "Course deleted!", type: "success" });
-      fetchCourses();
+      
+      if (res.ok) {
+        setToast({ message: "Course deleted!", type: "success" });
+        fetchCourses();
+        return;
+      }
+      
+      // Only handle auth errors if request failed
+      if (res.status === 401 || res.status === 403) {
+        setToast({ message: "Session expired. Please log in again.", type: "error" });
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      
+      const errorData = await res.json().catch(() => ({ message: "Network error" }));
+      throw new Error(errorData.message || `Error: ${res.status}`);
+      
     } catch (err: any) {
+      console.error("Delete error:", err);
       setError(err.message);
       setToast({ message: err.message, type: "error" });
     } finally {
       setLoading(false);
     }
   };
+
+  // Don't render if no token
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-gray-50 to-gray-100">
@@ -258,7 +399,7 @@ export default function AdminCourses() {
             >
               {filtered.map((course, index) => (
                 <motion.div
-                  key={course._id}
+                  key={course.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
@@ -278,7 +419,7 @@ export default function AdminCourses() {
                           {course.title}
                         </motion.h2>
                         <div className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full">
-                          ID: {course._id?.substring(0, 4)}
+                          ID: {course.id ? course.id.substring(0, 8) : 'N/A'}
                         </div>
                       </div>
                       <p className="text-gray-600 mb-6">{course.description}</p>
@@ -289,14 +430,16 @@ export default function AdminCourses() {
                         whileTap={{ scale: 0.95 }}
                         className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-semibold transition-colors"
                         onClick={() => openModal("edit", course)}
+                        disabled={!course.id}
                       >
                         Edit
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2.5 rounded-xl font-semibold transition-colors"
-                        onClick={() => handleDelete(course._id!)}
+                        className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2.5 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => course.id && handleDelete(course.id)}
+                        disabled={!course.id}
                       >
                         Delete
                       </motion.button>
@@ -384,7 +527,7 @@ export default function AdminCourses() {
                   )}
                 </motion.button>
               </form>
-            </motion.div>
+              </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
