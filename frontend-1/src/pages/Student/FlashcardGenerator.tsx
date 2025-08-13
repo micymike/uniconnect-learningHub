@@ -16,6 +16,9 @@ export default function FlashcardGenerator() {
   const [loading, setLoading] = useState(false);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [error, setError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [modalInput, setModalInput] = useState("5");
+  const [modalLoading, setModalLoading] = useState(false);
 
   const generateFlashcards = async () => {
     setLoading(true);
@@ -193,6 +196,101 @@ export default function FlashcardGenerator() {
                 </div>
               ))}
             </div>
+            <div className="flex flex-col items-center mt-6">
+              <button
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold text-base"
+                onClick={() => setShowModal(true)}
+              >
+                Get More Questions
+              </button>
+            </div>
+            {showModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs flex flex-col items-center">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 text-center">
+                    How many more questions would you like?
+                  </h3>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={modalInput}
+                    onChange={e => setModalInput(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-100 text-gray-900 border border-gray-300 mb-4"
+                    disabled={modalLoading}
+                  />
+                  <div className="flex gap-2 w-full">
+                    <button
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-semibold"
+                      disabled={modalLoading}
+                      onClick={async () => {
+                        const moreNum = Number(modalInput);
+                        if (!isNaN(moreNum) && moreNum > 0) {
+                          setModalLoading(true);
+                          try {
+                            let response;
+                            const token = localStorage.getItem("token") || "";
+                            if (inputType === "file" && file) {
+                              const formData = new FormData();
+                              formData.append("file", file);
+                              formData.append("numQuestions", moreNum.toString());
+                              response = await fetch("http://localhost:3004/api/ai/flashcards", {
+                                method: "POST",
+                                headers: {
+                                  "Authorization": `Bearer ${token}`,
+                                },
+                                body: formData,
+                              });
+                            } else {
+                              response = await fetch("http://localhost:3004/api/ai/flashcards", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  "Authorization": `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({
+                                  text,
+                                  numQuestions: moreNum,
+                                }),
+                              });
+                            }
+                            if (!response.ok) {
+                              throw new Error("Failed to get more flashcards");
+                            }
+                            const data = await response.json();
+                            setFlashcards((prev) => [...prev, ...(data.flashcards || [])]);
+                            setShowModal(false);
+                          } catch (err: any) {
+                            setError(err.message || "Unknown error");
+                          } finally {
+                            setModalLoading(false);
+                          }
+                        }
+                      }}
+                    >
+                      {modalLoading ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                          </svg>
+                          Adding...
+                        </span>
+                      ) : (
+                        "Add"
+                      )}
+                    </button>
+                    <button
+                      className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-2 rounded font-semibold"
+                      disabled={modalLoading}
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
