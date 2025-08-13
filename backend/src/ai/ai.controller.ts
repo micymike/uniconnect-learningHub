@@ -45,4 +45,18 @@ export class AIController {
     const explanation = await this.aiService.explainFlashcard(userId, question, answer);
     return { explanation };
   }
+
+  // Study Assistant: Ask about uploaded document
+  @UseGuards(JwtAuthGuard)
+  @Post('study-assist')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async studyAssist(
+    @Req() req,
+    @Body('question') question: string,
+    @UploadedFile() file?: any,
+  ): Promise<{ answer: string }> {
+    const userId = req.user.userId;
+    const answer = await this.aiService.studyAssist(userId, question, file);
+    return { answer };
+  }
 }

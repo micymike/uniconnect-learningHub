@@ -122,6 +122,52 @@ export class AIService {
     return { flashcards };
   }
 
+  // Study Assistant: Answer questions about uploaded document, referencing source
+  async studyAssist(
+    userId: string,
+    question: string,
+    file?: any
+  ): Promise<string> {
+    let inputText = "";
+    let sourceInfo = "";
+    if (file) {
+      const buffer = file.buffer || file;
+      const originalName = file.originalname || file.name || "";
+      if (originalName.endsWith(".pdf")) {
+        const pdfParse = require("pdf-parse");
+        const data = await pdfParse(buffer);
+        inputText = data.text;
+        sourceInfo = "PDF document";
+      } else if (originalName.endsWith(".docx") || originalName.endsWith(".doc")) {
+        const mammoth = require("mammoth");
+        const result = await mammoth.extractRawText({ buffer });
+        inputText = result.value;
+        sourceInfo = "Word document";
+      } else if (originalName.endsWith(".txt")) {
+        inputText = buffer.toString("utf-8");
+        sourceInfo = "Text file";
+      } else {
+        throw new Error("Unsupported file type. Only PDF, DOCX, and TXT are supported.");
+      }
+    } else {
+      throw new Error("No file provided.");
+    }
+
+    const prompt = [
+      "You are an AI study assistant. Given the following document, answer the student's question.",
+      "Always reference the source location in your answer (e.g., page number, section, or quote from the document).",
+      "If possible, cite the exact phrase or paragraph you used to answer.",
+      `Document Type: ${sourceInfo}`,
+      "Document Content:",
+      inputText,
+      `Student Question: ${question}`,
+      "Answer (with reference):"
+    ].join("\n");
+
+    const answer = await this.callAzureOpenAI(prompt);
+    return answer;
+  }
+
   // Explain Flashcard
   async explainFlashcard(
     userId: string,
