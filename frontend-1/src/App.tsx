@@ -8,12 +8,13 @@ import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
 import StudentDashboard from './pages/Student/StudentDashboard';
 import './App.css';
-import AIDemo from './pages/Student/AIDemo';
 import LessonsPage from './pages/Admin/Lessons';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QuizzesPage from './pages/Admin/Quizzes';
 import StudentDashboardLayout from './pages/Student/StudentDashboardLayout';
+import StudyBuddy from './pages/Student/StudyBuddy';
+import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -142,14 +143,12 @@ function App() {
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="courses" element={<Courses />} />
           <Route path="courses/:id" element={<CourseDetails />} />
-          <Route path="ai-demo" element={<AIDemo />} />
-          <Route path="profile" element={<div>ProfilePage </div>} />
           <Route path="settings" element={<div>Settings Page</div>} />
           <Route path="help" element={<div>Help Page</div>} />
           <Route path="feedback" element={<div>Feedback Page</div>} />
+          <Route path="chatbot" element={<StudyBuddy />} />
+          <Route path="flashcards" element={<FlashcardGenerator />} />
         </Route>
-        
-        
       </Routes>
     </Router>
   );
