@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
 
 const navItems = [
@@ -10,8 +10,10 @@ const navItems = [
   { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
 ];
 
+
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
@@ -62,21 +64,45 @@ export default function Sidebar() {
             <ul className="space-y-2">
               <li>
                 <button
-                  className="flex items-center w-full px-3 py-2 rounded hover:bg-gray-800 transition text-left"
+                  className={`flex items-center w-full px-3 py-2 rounded transition text-left ${
+                    location.pathname === "/student/study-assistant"
+                      ? "bg-orange-500 text-white"
+                      : "hover:bg-gray-800 text-gray-800"
+                  }`}
                   onClick={() => {
-                    navigate("chatbot");
+                    navigate("/student/study-assistant");
                     setOpen(false);
                   }}
                 >
-                  <i className="bx bx-chat text-xl mr-3"></i>
+                  <i className="bx bx-brain text-xl mr-3"></i>
+                  <span>Study Assistant</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`flex items-center w-full px-3 py-2 rounded transition text-left ${
+                    location.pathname === "/student/chatbot"
+                      ? "bg-orange-500 text-white"
+                      : "hover:bg-gray-800 text-gray-800"
+                  }`}
+                  onClick={() => {
+                    navigate("/student/chatbot");
+                    setOpen(false);
+                  }}
+                >
+                  <i className="bx bx-message-dots text-xl mr-3"></i>
                   <span>Study Buddy</span>
                 </button>
               </li>
               <li>
                 <button
-                  className="flex items-center w-full px-3 py-2 rounded hover:bg-gray-800 transition text-left"
+                  className={`flex items-center w-full px-3 py-2 rounded transition text-left ${
+                    location.pathname === "/student/flashcards"
+                      ? "bg-orange-500 text-white"
+                      : "hover:bg-gray-800 text-gray-800"
+                  }`}
                   onClick={() => {
-                    navigate("flashcards");
+                    navigate("/student/flashcards");
                     setOpen(false);
                   }}
                 >
