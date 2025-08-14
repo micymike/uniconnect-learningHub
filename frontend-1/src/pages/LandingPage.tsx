@@ -13,7 +13,7 @@ const features = [
   },
   {
     title: "For Admins",
-    points: [
+    points: [   
       "Create and manage courses easily",
       "Upload videos, PDFs, and text content",
       "Build modules, lessons, and quizzes",
@@ -81,3 +81,6 @@ export default function LandingPage() {
     </div>
   );
 }
+
+
+
