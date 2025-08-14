@@ -110,6 +110,22 @@ export default function Sidebar() {
                   <span>Flashcard Generator</span>
                 </button>
               </li>
+              <li>
+                <button
+                  className={`flex items-center w-full px-3 py-2 rounded transition text-left ${
+                    location.pathname === "/student/mynotes"
+                      ? "bg-orange-500 text-white"
+                      : "hover:bg-gray-800 text-gray-800"
+                  }`}
+                  onClick={() => {
+                    navigate("/student/mynotes");
+                    setOpen(false);
+                  }}
+                >
+                  <i className="bx bx-notepad text-xl mr-3"></i>
+                  <span>My Notes</span>
+                </button>
+              </li>
             </ul>
           </div>
         </nav>

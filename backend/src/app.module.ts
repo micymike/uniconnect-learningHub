@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotesModule } from './notes/notes.module';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
@@ -12,6 +13,7 @@ import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
+    NotesModule,
     ConfigModule.forRoot({
       isGlobal: true, 
       envFilePath: '${process.cwd()}/.env' 
