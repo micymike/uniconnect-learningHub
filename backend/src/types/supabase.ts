@@ -64,6 +64,38 @@ export type Database = {
             updated_at?: string
           }
         }
+        task_schedules: {
+          Row: {
+            id: string
+            user_id: string
+            title: string
+            schedule_date: string
+            tasks: Record<string, any>[]
+            total_duration: number
+            created_at: string
+            updated_at: string
+          }
+          Insert: {
+            id: string
+            user_id: string
+            title: string
+            schedule_date: string
+            tasks: Record<string, any>[]
+            total_duration: number
+            created_at?: string
+            updated_at?: string
+          }
+          Update: {
+            id?: string
+            user_id?: string
+            title?: string
+            schedule_date?: string
+            tasks?: Record<string, any>[]
+            total_duration?: number
+            created_at?: string
+            updated_at?: string
+          }
+        }
       }
     
     }
