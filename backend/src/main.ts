@@ -39,9 +39,8 @@ async function bootstrap() {
     }),
   );
 
-  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'] || ['https://uniconnect-learninghub-8s1j.onrender.com'];
   app.enableCors({
-    origin: corsOrigins,
+    origin: ['https://uniconnect-learninghub-8s1j.onrender.com'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
