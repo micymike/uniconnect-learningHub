@@ -12,7 +12,7 @@ interface AnalyzeWithBuddyProps {
 }
 
 const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [view, setView] = useState<"select" | "analyze">("select");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [remotePdfUrl, setRemotePdfUrl] = useState<string>("");
@@ -97,115 +97,128 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
     setChatInput("");
   };
 
+  // Reset selection and chat
+  const handleBack = () => {
+    setView("select");
+    setSelectedNote(null);
+    setUploadFile(null);
+    setRemotePdfUrl("");
+    setChatMessages([]);
+    setChatInput("");
+  };
+
+  // Handle selection
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
-    setModalOpen(false);
+    setView("analyze");
+    setUploadFile(null);
+    setRemotePdfUrl("");
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setUploadFile(e.target.files[0]);
       setSelectedNote(null);
-      setModalOpen(false);
+      setRemotePdfUrl("");
+      setView("analyze");
+    }
+  };
+
+  const handleRemoteUrl = () => {
+    if (remotePdfUrl.trim()) {
+      setSelectedNote(null);
+      setUploadFile(null);
+      setView("analyze");
     }
   };
 
   return (
     <div className="w-full">
-      <button
-        className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded font-semibold transition mb-4"
-        onClick={() => setModalOpen(true)}
-      >
-        Analyze documents with Buddy (AI)
-      </button>
+      {/* Top bar with upload button */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-orange-500">Analyze documents with Buddy (AI)</h2>
+        {view === "select" && (
+          <label className="cursor-pointer flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded font-semibold transition">
+            <span className="material-icons" style={{ fontSize: "1.5rem" }}>add</span>
+            Upload PDF
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleUpload}
+              className="hidden"
+            />
+          </label>
+        )}
+      </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+      {view === "select" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Notes List */}
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="font-bold text-orange-500 mb-4">Your Uploaded PDFs</h3>
+            <div className="flex flex-col gap-2 max-h-60 overflow-auto">
+              {notes.filter(n => n.url.endsWith(".pdf")).map(note => (
+                <button
+                  key={note.id}
+                  className="bg-gray-100 hover:bg-orange-100 px-3 py-2 rounded text-left transition"
+                  onClick={() => handleSelectNote(note)}
+                >
+                  {note.name}
+                </button>
+              ))}
+              {notes.filter(n => n.url.endsWith(".pdf")).length === 0 && (
+                <div className="text-gray-400">No uploaded PDFs found.</div>
+              )}
+            </div>
+          </div>
+          {/* Remote PDF URL */}
+          <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+            <h3 className="font-bold text-orange-500 mb-4">Analyze Remote PDF</h3>
+            <input
+              type="text"
+              value={remotePdfUrl}
+              onChange={e => setRemotePdfUrl(e.target.value)}
+              placeholder="https://example.com/document.pdf"
+              className="w-full p-2 rounded border border-gray-300 mb-2"
+            />
             <button
-              className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl"
-              onClick={() => setModalOpen(false)}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition self-end"
+              disabled={!remotePdfUrl.trim()}
+              onClick={handleRemoteUrl}
             >
-              &times;
+              Analyze this PDF
             </button>
-            <h2 className="text-xl font-bold mb-4 text-orange-500">Select, Upload, or Enter PDF URL</h2>
-            <div className="mb-4">
-              <label className="block font-semibold mb-2">Choose from uploaded notes:</label>
-              <div className="flex flex-col gap-2 max-h-40 overflow-auto">
-                {notes.filter(n => n.url.endsWith(".pdf")).map(note => (
-                  <button
-                    key={note.id}
-                    className="bg-gray-100 hover:bg-orange-100 px-3 py-2 rounded text-left"
-                    onClick={() => {
-                      setSelectedNote(note);
-                      setUploadFile(null);
-                      setRemotePdfUrl("");
-                      setModalOpen(false);
-                    }}
-                  >
-                    {note.name}
-                  </button>
-                ))}
-                {notes.filter(n => n.url.endsWith(".pdf")).length === 0 && (
-                  <div className="text-gray-400">No uploaded PDFs found.</div>
-                )}
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block font-semibold mb-2">Or upload a new PDF:</label>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleUpload}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-2">Or enter a remote PDF URL:</label>
-              <input
-                type="text"
-                value={remotePdfUrl}
-                onChange={e => {
-                  setRemotePdfUrl(e.target.value);
-                  setSelectedNote(null);
-                  setUploadFile(null);
-                }}
-                placeholder="https://example.com/document.pdf"
-                className="w-full p-2 rounded border border-gray-300"
-              />
-              <button
-                className="mt-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition"
-                disabled={!remotePdfUrl.trim()}
-                onClick={() => {
-                  setModalOpen(false);
-                }}
-              >
-                Use this PDF URL
-              </button>
-            </div>
           </div>
         </div>
       )}
 
-      {(selectedNote || uploadFile || remotePdfUrl.trim()) && (
-        <div className="flex w-full gap-6 mt-6">
+      {view === "analyze" && (
+        <div className="flex flex-col md:flex-row w-full gap-6 mt-6">
           {/* Left: PDF Viewer */}
-          <div className="flex-1 bg-white rounded-xl shadow p-4">
-            <h3 className="font-bold text-orange-500 mb-2">
-              {selectedNote
-                ? selectedNote.name
-                : uploadFile
-                ? uploadFile.name
-                : remotePdfUrl
-                ? remotePdfUrl
-                : ""}
-            </h3>
+          <div className="flex-1 bg-white rounded-xl shadow p-4 mb-4 md:mb-0">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-orange-500">
+                {selectedNote
+                  ? selectedNote.name
+                  : uploadFile
+                  ? uploadFile.name
+                  : remotePdfUrl
+                  ? remotePdfUrl
+                  : ""}
+              </h3>
+              <button
+                className="bg-gray-200 hover:bg-orange-100 text-orange-500 px-3 py-1 rounded font-semibold transition"
+                onClick={handleBack}
+              >
+                &larr; Back
+              </button>
+            </div>
             {selectedNote ? (
               <iframe
                 src={selectedNote.url}
                 title={selectedNote.name}
                 width="100%"
-                height="500px"
+                height="400px"
                 className="rounded border"
               />
             ) : uploadFile ? (
@@ -215,7 +228,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
                 src={remotePdfUrl}
                 title={remotePdfUrl}
                 width="100%"
-                height="500px"
+                height="400px"
                 className="rounded border"
               />
             ) : null}
@@ -257,13 +270,19 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
               )}
             </div>
             <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder="Ask Buddy about the PDF..."
-                className="flex-1 p-2 rounded bg-gray-800 text-white border border-gray-700"
-              />
+<input
+  type="text"
+  value={chatInput}
+  onChange={e => setChatInput(e.target.value)}
+  onKeyDown={e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  }}
+  placeholder="Ask Buddy about the PDF..."
+  className="flex-1 p-2 rounded bg-gray-800 text-white border border-gray-700"
+/>
               <button
                 className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition"
                 onClick={handleSendMessage}
