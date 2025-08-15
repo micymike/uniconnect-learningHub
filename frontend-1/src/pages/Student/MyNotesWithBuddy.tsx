@@ -61,7 +61,7 @@ export default function MyNotesWithBuddy() {
             </button>
           </div>
         ) : (
-          <AnalyzeWithBuddy notes={notes} />
+          <AnalyzeWithBuddy notes={notes} refreshNotes={fetchNotes} />
         )}
       </div>
     </div>
