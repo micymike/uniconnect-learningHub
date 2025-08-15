@@ -98,6 +98,40 @@ const TaskScheduler: React.FC = () => {
     }
   };
 
+  const updateTask = (taskIndex: number, field: string, value: any) => {
+    if (!selectedSchedule) return;
+    
+    const updatedTasks = [...selectedSchedule.tasks];
+    updatedTasks[taskIndex] = { ...updatedTasks[taskIndex], [field]: value };
+    
+    const updatedSchedule = { ...selectedSchedule, tasks: updatedTasks };
+    setSelectedSchedule(updatedSchedule);
+    
+    // Update in schedules array
+    const updatedSchedules = schedules.map(s => 
+      s.id === selectedSchedule.id ? updatedSchedule : s
+    );
+    setSchedules(updatedSchedules);
+  };
+
+  const saveSchedule = async () => {
+    if (!selectedSchedule) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/task-scheduler/schedules/${selectedSchedule.id}?userId=${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedSchedule)
+      });
+      
+      if (response.ok) {
+        console.log('Schedule saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+    }
+  };
+
   const downloadSchedule = async (scheduleId: string, title: string) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/task-scheduler/download/${scheduleId}?userId=${userId}`);
@@ -287,52 +321,115 @@ const TaskScheduler: React.FC = () => {
                       {selectedSchedule.tasks?.length || 0} tasks • {Math.floor((selectedSchedule.totalDuration || 0) / 60)}h {(selectedSchedule.totalDuration || 0) % 60}m total
                     </p>
                   </div>
-                  <button
-                    onClick={() => downloadSchedule(selectedSchedule.id, selectedSchedule.title)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveSchedule}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Save
+                    </button>
+                    <button
+                      onClick={() => downloadSchedule(selectedSchedule.id, selectedSchedule.title)}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  {selectedSchedule.tasks?.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className={`p-4 rounded-lg border-l-4 ${
-                        task.category === 'break'
-                          ? 'bg-amber-50 border-l-amber-400'
-                          : 'bg-gray-50 border-l-indigo-400'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="text-lg">{getCategoryIcon(task.category)}</span>
-                            <h3 className="font-semibold text-gray-900">{task.title}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
-                              {task.priority.toUpperCase()}
-                            </span>
-                          </div>
-                          <p className="text-gray-600 mb-2">{task.description}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {task.startTime} - {task.endTime}
-                            </span>
-                            <span>{task.estimatedDuration} minutes</span>
-                            <span className="capitalize">{task.category}</span>
-                          </div>
-                        </div>
-                        <CheckCircle className="h-5 w-5 text-gray-300 hover:text-green-500 cursor-pointer" />
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>No tasks found in this schedule.</p>
-                    </div>
-                  )}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Start Time</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">End Time</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Task</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Description</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Priority</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Category</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-medium text-gray-900">Duration (min)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedSchedule.tasks?.map((task, index) => (
+                        <tr key={task.id} className={task.category === 'break' ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'}>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="time"
+                              value={task.startTime}
+                              onChange={(e) => updateTask(index, 'startTime', e.target.value)}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="time"
+                              value={task.endTime}
+                              onChange={(e) => updateTask(index, 'endTime', e.target.value)}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="text"
+                              value={task.title}
+                              onChange={(e) => updateTask(index, 'title', e.target.value)}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="text"
+                              value={task.description}
+                              onChange={(e) => updateTask(index, 'description', e.target.value)}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <select
+                              value={task.priority}
+                              onChange={(e) => updateTask(index, 'priority', e.target.value as 'high' | 'medium' | 'low')}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            >
+                              <option value="high">High</option>
+                              <option value="medium">Medium</option>
+                              <option value="low">Low</option>
+                            </select>
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <select
+                              value={task.category}
+                              onChange={(e) => updateTask(index, 'category', e.target.value)}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                            >
+                              <option value="study">Study</option>
+                              <option value="work">Work</option>
+                              <option value="exercise">Exercise</option>
+                              <option value="personal">Personal</option>
+                              <option value="break">Break</option>
+                            </select>
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="number"
+                              value={task.estimatedDuration}
+                              onChange={(e) => updateTask(index, 'estimatedDuration', parseInt(e.target.value))}
+                              className="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-500 rounded px-1"
+                              min="5"
+                            />
+                          </td>
+                        </tr>
+                      )) || (
+                        <tr>
+                          <td colSpan={7} className="border border-gray-300 px-3 py-8 text-center text-gray-500">
+                            No tasks found in this schedule.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ) : (
