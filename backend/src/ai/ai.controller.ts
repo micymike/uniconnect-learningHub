@@ -53,10 +53,11 @@ export class AIController {
   async studyAssist(
     @Req() req,
     @Body('question') question: string,
+    @Body('pdfUrl') pdfUrl?: string,
     @UploadedFile() file?: any,
   ): Promise<{ answer: string }> {
     const userId = req.user.userId;
-    const answer = await this.aiService.studyAssist(userId, question, file);
+    const answer = await this.aiService.studyAssist(userId, question, file, pdfUrl);
     return { answer };
   }
 }

@@ -25,13 +25,37 @@ export class NotesController {
     @UploadedFile() file: Express.Multer.File,
     @Body('name') name: string,
     @Body('contentType') contentType: string,
+    @Body('folder') folder: string,
+    @Body('tags') tags: string | string[],
+    @Body('color_label') color_label: string,
+    @Body('icon') icon: string,
+    @Body('file_type') file_type: string,
+    @Body('ocr_text') ocr_text: string,
     @Req() req: Request,
   ) {
     if (!file) throw new BadRequestException('No file uploaded');
     if (!name || !name.trim()) throw new BadRequestException('Note name required');
     if (!req.user || !req.user['userId']) throw new BadRequestException('User not authenticated');
     const userId = req.user['userId'];
-    return await this.notesService.uploadNote(userId, name.trim(), file, contentType);
+    // Parse tags if sent as a comma-separated string
+    let parsedTags: string[] = [];
+    if (typeof tags === 'string') {
+      parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    } else if (Array.isArray(tags)) {
+      parsedTags = tags;
+    }
+    return await this.notesService.uploadNote(
+      userId,
+      name.trim(),
+      file,
+      contentType,
+      folder,
+      parsedTags,
+      color_label,
+      icon,
+      file_type,
+      ocr_text
+    );
   }
 
   @Get()

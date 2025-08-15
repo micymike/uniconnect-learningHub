@@ -126,10 +126,12 @@ export class AIService {
   async studyAssist(
     userId: string,
     question: string,
-    file?: any
+    file?: any,
+    pdfUrl?: string
   ): Promise<string> {
     let inputText = "";
     let sourceInfo = "";
+
     if (file) {
       const buffer = file.buffer || file;
       const originalName = file.originalname || file.name || "";
@@ -149,8 +151,16 @@ export class AIService {
       } else {
         throw new Error("Unsupported file type. Only PDF, DOCX, and TXT are supported.");
       }
+    } else if (pdfUrl) {
+      // Download PDF from remote URL
+      const response = await axios.get(pdfUrl, { responseType: "arraybuffer" });
+      const buffer = Buffer.from(response.data);
+      const pdfParse = require("pdf-parse");
+      const data = await pdfParse(buffer);
+      inputText = data.text;
+      sourceInfo = `PDF document (downloaded from ${pdfUrl})`;
     } else {
-      throw new Error("No file provided.");
+      throw new Error("No file or pdfUrl provided.");
     }
 
     const prompt = [
