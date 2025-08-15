@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 // do not change this file
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3004/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3004/api";
 
 type Note = {
   id: string;

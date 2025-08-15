@@ -52,7 +52,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
       formData.append("file", uploadFile);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
           method: "POST",
           headers: token
             ? { Authorization: `Bearer ${token}` }
@@ -73,7 +73,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
     } else {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
