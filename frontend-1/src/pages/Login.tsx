@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register" | "forgotPassword">("login");

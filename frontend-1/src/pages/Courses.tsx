@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import "boxicons/css/boxicons.min.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com";
 
 type Course = {
   _id: string;
