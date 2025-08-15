@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "boxicons/css/boxicons.min.css";
+import { formatAIResponse } from "../../utils/formatAIResponse";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -221,7 +222,10 @@ const StudyBuddy: React.FC = () => {
                     {msg.imageUrl && (
                       <img src={msg.imageUrl} alt="Uploaded" className="mb-2 rounded-lg max-w-xs" />
                     )}
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    {msg.sender === "ai"
+  ? formatAIResponse(msg.text)
+  : <p className="text-sm leading-relaxed">{msg.text}</p>
+}
                   </div>
                   <span className="text-xs text-gray-500 mt-1 px-2">
                     {formatTime(msg.timestamp)}
