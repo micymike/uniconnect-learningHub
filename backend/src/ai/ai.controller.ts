@@ -7,6 +7,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class AIController {
   constructor(private readonly aiService: AIService) {}
 
+  // Analyze Image (OCR + AI Explanation)
+  @UseGuards(JwtAuthGuard)
+  @Post('analyze-image')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async analyzeImage(
+    @Req() req,
+    @UploadedFile() image: Express.Multer.File,
+    @Body('prompt') prompt: string,
+  ): Promise<{ explanation: string }> {
+    const userId = req.user.userId;
+    const explanation = await this.aiService.analyzeImage(userId, image, prompt);
+    return { explanation };
+  }
+
   // Study Buddy Chatbot
   @UseGuards(JwtAuthGuard)
   @Post('chat')

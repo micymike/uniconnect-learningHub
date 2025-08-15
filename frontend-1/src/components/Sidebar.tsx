@@ -4,10 +4,8 @@ import "boxicons/css/boxicons.min.css";
 
 const navItems = [
   { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
-  { label: "Courses", path: "courses", icon: "bx bx-book" },
-  { label: "Settings", path: "settings", icon: "bx bx-cog" },
-  { label: "Help", path: "help", icon: "bx bx-help-circle" },
-  { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
+  { label: "Courses", path: "courses", icon: "bx bx-book" }
+
 ];
 
 const aiTools = [
