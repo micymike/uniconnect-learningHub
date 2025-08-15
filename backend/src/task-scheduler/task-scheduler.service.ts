@@ -194,6 +194,24 @@ Return only the JSON array, no other text.`;
     }));
   }
 
+  async updateSchedule(userId: string, scheduleId: string, schedule: Schedule): Promise<Schedule> {
+    const { data, error } = await this.supabase
+      .from('task_schedules')
+      .update({
+        title: schedule.title,
+        tasks: schedule.tasks,
+        total_duration: schedule.tasks.reduce((sum, task) => sum + task.estimatedDuration, 0),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', scheduleId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return schedule;
+  }
+
   async deleteSchedule(userId: string, scheduleId: string): Promise<void> {
     const { error } = await this.supabase
       .from('task_schedules')
