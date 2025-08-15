@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import "boxicons/css/boxicons.min.css";
 import { formatAIResponse } from "../../utils/formatAIResponse";
 
 const API_BASE = import.meta.env.VITE_API_URL;
+const MAX_MESSAGES = 50; // Limit message history
 
 interface Message {
   sender: "user" | "ai";
@@ -26,6 +27,7 @@ const StudyBuddy: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,6 +36,25 @@ const StudyBuddy: React.FC = () => {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const cleanupImage = useCallback(() => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setImageFile(null);
+  }, [imagePreview]);
 
   // Unified sendMessage: sends text, or text+image if image attached
   const sendMessage = async () => {
@@ -46,7 +67,10 @@ const StudyBuddy: React.FC = () => {
       imageUrl: imagePreview || undefined,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const newMessages = [...prev, userMessage];
+      return newMessages.length > MAX_MESSAGES ? newMessages.slice(-MAX_MESSAGES) : newMessages;
+    });
     setInput("");
     setLoading(true);
     setIsTyping(true);
@@ -86,38 +110,43 @@ const StudyBuddy: React.FC = () => {
         throw new Error(data.message || "AI error");
       }
 
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "ai",
-            text:
-              imageFile
-                ? data.explanation || "Here's what I see in your image."
-                : data.reply || "I'm here to help you learn! 📚",
-            timestamp: new Date(),
-          },
-        ]);
+      timeoutRef.current = setTimeout(() => {
+        setMessages((prev) => {
+          const newMessages = [
+            ...prev,
+            {
+              sender: "ai",
+              text:
+                imageFile
+                  ? data.explanation || "Here's what I see in your image."
+                  : data.reply || "I'm here to help you learn! 📚",
+              timestamp: new Date(),
+            },
+          ];
+          return newMessages.length > MAX_MESSAGES ? newMessages.slice(-MAX_MESSAGES) : newMessages;
+        });
         setIsTyping(false);
       }, 1000);
     } catch (err: any) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "ai",
-            text: imageFile
-              ? "Sorry, I couldn't analyze the image. Please try again! 🔄"
-              : "Sorry, I'm having trouble connecting right now. Please try again in a moment! 🔄",
-            timestamp: new Date(),
-          },
-        ]);
+      timeoutRef.current = setTimeout(() => {
+        setMessages((prev) => {
+          const newMessages = [
+            ...prev,
+            {
+              sender: "ai",
+              text: imageFile
+                ? "Sorry, I couldn't analyze the image. Please try again! 🔄"
+                : "Sorry, I'm having trouble connecting right now. Please try again in a moment! 🔄",
+              timestamp: new Date(),
+            },
+          ];
+          return newMessages.length > MAX_MESSAGES ? newMessages.slice(-MAX_MESSAGES) : newMessages;
+        });
         setIsTyping(false);
       }, 1000);
     } finally {
       setLoading(false);
-      setImagePreview(null);
-      setImageFile(null);
+      cleanupImage();
     }
   };
 
@@ -127,23 +156,25 @@ const StudyBuddy: React.FC = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file && file.type.startsWith("image/") && file.size < 5 * 1024 * 1024) { // 5MB limit
+      cleanupImage(); // Clean up previous image
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => setImagePreview(ev.target?.result as string);
       reader.readAsDataURL(file);
     }
-  };
+  }, [cleanupImage]);
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith("image/")) {
         const file = item.getAsFile();
-        if (file) {
+        if (file && file.size < 5 * 1024 * 1024) { // 5MB limit
+          cleanupImage(); // Clean up previous image
           setImageFile(file);
           const reader = new FileReader();
           reader.onload = (ev) => setImagePreview(ev.target?.result as string);
@@ -151,7 +182,7 @@ const StudyBuddy: React.FC = () => {
         }
       }
     }
-  };
+  }, [cleanupImage]);
 
   const quickPrompts = [
     "Explain a concept",
@@ -304,10 +335,7 @@ const StudyBuddy: React.FC = () => {
                   style={{ width: 40, height: 40, objectFit: "cover" }}
                 />
                 <button
-                  onClick={() => {
-                    setImagePreview(null);
-                    setImageFile(null);
-                  }}
+                  onClick={cleanupImage}
                   className="text-gray-400 hover:text-red-500 text-xs ml-1"
                   title="Remove"
                 >
