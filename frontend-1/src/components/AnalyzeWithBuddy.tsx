@@ -9,9 +9,10 @@ type Note = {
 
 interface AnalyzeWithBuddyProps {
   notes: Note[];
+  refreshNotes?: () => Promise<void>;
 }
 
-const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
+const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes }) => {
   const [view, setView] = useState<"select" | "analyze">("select");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -115,12 +116,38 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes }) => {
     setRemotePdfUrl("");
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload PDF to backend and refresh notes list
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setUploadFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setUploadFile(file);
       setSelectedNote(null);
       setRemotePdfUrl("");
       setView("analyze");
+
+      // Upload to backend
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("name", file.name);
+
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/upload`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: formData,
+        });
+        if (!response.ok) throw new Error("Upload failed");
+        // Optionally, get the uploaded note info
+        // const uploadedNote = await response.json();
+
+        // Refresh notes list (if provided by parent)
+        if (typeof refreshNotes === "function") {
+          await refreshNotes();
+        }
+      } catch (error) {
+        alert("Failed to upload PDF. Please try again.");
+      }
     }
   };
 
