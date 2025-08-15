@@ -15,6 +15,7 @@ import QuizzesPage from './pages/Admin/Quizzes';
 import StudentDashboardLayout from './pages/Student/StudentDashboardLayout';
 import StudyBuddy from './pages/Student/StudyBuddy';
 import FlashcardGenerator from './pages/Student/FlashcardGenerator';
+import TaskScheduler from './pages/Student/TaskScheduler';
 
 import MyNotes from './pages/Student/MyNotes';
 import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
@@ -151,6 +152,7 @@ function App() {
           <Route path="feedback" element={<div>Feedback Page</div>} />
           <Route path="chatbot" element={<StudyBuddy />} />
           <Route path="flashcards" element={<FlashcardGenerator />} />
+          <Route path="task-scheduler" element={<TaskScheduler />} />
 
 <Route path="mynotes" element={<MyNotesWithBuddy />} />
         </Route>

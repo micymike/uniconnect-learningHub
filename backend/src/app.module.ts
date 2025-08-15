@@ -10,6 +10,7 @@ import { LessonsModule } from './lessons/lessons.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { AuthModule } from './auth/auth.module';
 import { AIModule } from './ai/ai.module';
+import { TaskSchedulerModule } from './task-scheduler/task-scheduler.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AIModule } from './ai/ai.module';
     QuizzesModule,
     AuthModule,
     AIModule,
+    TaskSchedulerModule,
   ],
   controllers: [],
   providers: [],
