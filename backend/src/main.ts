@@ -39,7 +39,7 @@ async function bootstrap() {
     }),
   );
 
-  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'];
+  const corsOrigins = configService.get('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'] || ['https://uniconnect-learninghub-8s1j.onrender.com'];
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
