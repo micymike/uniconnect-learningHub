@@ -195,6 +195,53 @@ export class AIService {
     return explanation;
   }
 
+  // Analyze Image (Vision Model)
+  async analyzeImage(
+    userId: string,
+    image: Express.Multer.File,
+    prompt?: string
+  ): Promise<string> {
+    if (!image || !image.buffer) {
+      throw new Error("No image file provided.");
+    }
+    // Convert image buffer to base64
+    const base64Image = image.buffer.toString('base64');
+    // Prepare payload for vision model (e.g., Azure OpenAI, OpenAI GPT-4 Vision)
+    // Use only the credentials and endpoint as defined in .env (do not change or add fallbacks)
+    const endpoint = process.env.AZURE_API_BASE;
+    const apiKey = process.env.AZURE_API_KEY;
+    if (!endpoint || !apiKey) {
+      throw new Error("Azure OpenAI API endpoint or API key is not set in environment variables.");
+    }
+    // Use user prompt or fallback to default
+    const userPrompt = prompt && prompt.trim().length > 0
+      ? prompt.trim()
+      : "Explain the content of this image for a student.";
+    // Payload for GPT-4.1 image support (gpt-4-1106-preview or similar)
+    const payload = {
+      model: process.env.AZURE_API_MODEL,
+      messages: [
+        { role: "system", content: "You are Study Buddy, a friendly AI that explains images to students in simple, supportive language." },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt },
+            { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
+          ]
+        }
+      ],
+      max_tokens: 512
+    };
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    };
+    // Send request to vision model
+    const response = await axios.post(endpoint, payload, { headers });
+    const explanation = response.data.choices?.[0]?.message?.content?.trim() || "No explanation returned.";
+    return explanation;
+  }
+
   // Helper: Call Azure OpenAI API
   private async callAzureOpenAI(prompt: string): Promise<string> {
     const endpoint = process.env.AZURE_API_BASE!;
