@@ -14,6 +14,99 @@ interface AIResponseFormatterProps {
 }
 
 /**
+ * Enhanced mathematical expression parser
+ */
+function parseMathExpressions(text: string): string {
+  let processed = text;
+  
+  // Handle complex expressions that start with $ but aren't properly wrapped
+  processed = processed.replace(/\$\[([^\]]+)\]/g, '$$[$1]$$');
+  processed = processed.replace(/\$\{([^}]+)\}/g, '$$\\{$1\\}$$');
+  
+  // Handle expressions with parentheses and mathematical notation
+  processed = processed.replace(/\$\(([^)]*(?:[+\-*/=^\\][^)]*)*)\)/g, '$$($1)$$');
+  
+  // Handle standalone mathematical expressions (more comprehensive)
+  const mathPatterns = [
+    // Expressions with equals signs
+    /^([^:\n]*[a-zA-Z0-9\s]*[=][^:\n]*)$/gm,
+    // Expressions with mathematical operators and parentheses
+    /^([^:\n]*\([^)]*[+\-*/^][^)]*\)[^:\n]*)$/gm,
+    // Expressions with exponents
+    /^([^:\n]*[a-zA-Z0-9]+\^[^:\n]*)$/gm,
+    // Expressions with multiplication symbols
+    /^([^:\n]*[×\\times][^:\n]*)$/gm,
+    // Expressions with division symbols
+    /^([^:\n]*[÷\\div][^:\n]*)$/gm,
+  ];
+  
+  mathPatterns.forEach(pattern => {
+    processed = processed.replace(pattern, (match) => {
+      // Don't format if it's already a heading, contains "Step", is very short, or contains apostrophes (likely a sentence)
+      if (
+        match.includes(':') ||
+        match.includes('Step') ||
+        match.includes('#') ||
+        match.length < 3 ||
+        match.includes("'") // skip lines with apostrophes
+      ) {
+        return match;
+      }
+      return `$$${match.trim()}$$`;
+    });
+  });
+  
+  return processed;
+}
+
+/**
+ * Advanced text preprocessor for mathematical content
+ */
+function preprocessText(text: string): string {
+  let processed = text;
+
+  // Handle headings and structure first
+  processed = processed.replace(/^(Question \d+:)$/gm, '# $1');
+  processed = processed.replace(/^(Step \d+:.*?)$/gm, '## $1');
+  processed = processed.replace(/^(Final Answer:)$/gm, '## $1');
+  
+  // Handle mathematical expressions
+  processed = parseMathExpressions(processed);
+
+  // Remove unwanted asterisks from math output (inside $$...$$)
+  processed = processed.replace(/\$\$([^\$]+)\$\$/g, (match, mathContent) => {
+    // Remove all asterisks (single or multiple) from math content
+    const cleaned = mathContent.replace(/\*+/g, '');
+    return `$$${cleaned}$$`;
+  });
+
+  // Fix specific mathematical notation issues
+  processed = processed.replace(/\\\(/g, '(');
+  processed = processed.replace(/\\\)/g, ')');
+  processed = processed.replace(/\\\{/g, '\\{');
+  processed = processed.replace(/\\\}/g, '\\}');
+  
+  // Handle expressions that should be inline vs block math
+  processed = processed.replace(/\$\$([a-zA-Z0-9])\$\$/g, '$$$1$$'); // Single variables
+  processed = processed.replace(/\$\$(\d+)\$\$/g, '$$$1$$'); // Single numbers
+  
+  // Handle complex expressions that were missed
+  processed = processed.replace(/(\$[^$\n]*[+\-*/=^][^$\n]*\$)/g, '$$$1$$');
+  
+  // Clean up multiple dollar signs
+  processed = processed.replace(/\$\$\$+/g, '$$');
+  processed = processed.replace(/\$\$\$([^$]+)\$\$\$/g, '$$$1$$');
+  
+  // Ensure proper spacing around block equations
+  processed = processed.replace(/(\$\$[^$\n]+\$\$)/g, '\n\n$1\n\n');
+  
+  // Clean up excessive whitespace
+  processed = processed.replace(/\n{3,}/g, '\n\n');
+  
+  return processed.trim();
+}
+
+/**
  * Advanced AI response formatter with enhanced math, code, and text processing
  */
 export function formatAIResponse(
@@ -42,33 +135,25 @@ export function formatAIResponse(
             </p>
           ),
 
-          // Headings with consistent styling
+          // Enhanced heading styling for mathematical content
           h1: ({ children }) => (
-            <h1 className="text-2xl md:text-3xl font-bold mb-4 mt-6 text-blue-600 dark:text-blue-400 border-b-2 border-blue-200 dark:border-blue-800 pb-2">
+            <h1 className="text-2xl md:text-3xl font-bold mb-6 mt-8 text-blue-600 dark:text-blue-400 border-b-2 border-blue-200 dark:border-blue-800 pb-3">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-xl md:text-2xl font-bold mb-3 mt-5 text-green-600 dark:text-green-400">
+            <h2 className="text-xl md:text-2xl font-bold mb-4 mt-6 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-lg md:text-xl font-semibold mb-2 mt-4 text-purple-600 dark:text-purple-400">
+            <h3 className="text-lg md:text-xl font-semibold mb-3 mt-5 text-purple-600 dark:text-purple-400">
               {children}
             </h3>
           ),
-          h4: ({ children }) => (
-            <h4 className="text-base md:text-lg font-semibold mb-2 mt-3 text-gray-700 dark:text-gray-300">
-              {children}
-            </h4>
-          ),
 
           // Enhanced code blocks with syntax highlighting
-          code: (props) => {
-            // Use the type from react-markdown for code blocks
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { inline, className, children, ...rest } = props as any;
+          code: ({ node, inline, className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
             
@@ -87,7 +172,7 @@ export function formatAIResponse(
                       borderRadius: '0 0 0.5rem 0.5rem',
                       fontSize: '0.875rem',
                     }}
-                    {...rest}
+                    {...props}
                   >
                     {String(children).replace(/\n$/, '')}
                   </SyntaxHighlighter>
@@ -99,31 +184,31 @@ export function formatAIResponse(
             return (
               <code
                 className={`${isDark ? 'bg-gray-800 text-green-400' : 'bg-gray-100 text-red-600'} px-2 py-1 rounded-md text-sm font-mono`}
-                {...rest}
+                {...props}
               >
                 {children}
               </code>
             );
           },
 
-          // Enhanced lists
+          // Enhanced lists with better spacing for mathematical steps
           ul: ({ children }) => (
-            <ul className="mb-4 space-y-2 list-disc list-inside pl-4">
+            <ul className="mb-6 space-y-3 list-disc list-inside pl-4">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-4 space-y-2 list-decimal list-inside pl-4">
+            <ol className="mb-6 space-y-3 list-decimal list-inside pl-4">
               {children}
             </ol>
           ),
           li: ({ children }) => (
-            <li className="leading-relaxed">{children}</li>
+            <li className="leading-relaxed text-base">{children}</li>
           ),
 
           // Enhanced tables
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
+            <div className="overflow-x-auto my-6">
               <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-700">
                 {children}
               </table>
@@ -181,15 +266,13 @@ export function formatAIResponse(
             <hr className="my-6 border-gray-300 dark:border-gray-700" />
           ),
 
-          // Enhanced Math expressions (handled by KaTeX)
+          // Enhanced math expressions with better styling
           div: ({ className, children, ...props }) => {
             if (className?.includes('math-display')) {
               return (
-                <div className="my-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-lg overflow-x-auto">
-                  <div className="flex items-center justify-center">
-                    <div className={`${className} text-lg md:text-xl`} {...props}>
-                      {children}
-                    </div>
+                <div className="my-6 p-6 bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 rounded-xl border-l-4 border-indigo-500 shadow-lg overflow-x-auto">
+                  <div className={`${className} text-center text-lg md:text-xl`} {...props}>
+                    {children}
                   </div>
                 </div>
               );
@@ -197,12 +280,12 @@ export function formatAIResponse(
             return <div className={className} {...props}>{children}</div>;
           },
 
-          // Enhanced inline math styling
+          // Inline math expressions
           span: ({ className, children, ...props }) => {
             if (className?.includes('math-inline')) {
               return (
                 <span 
-                  className={`${className} inline-block px-2 py-1 mx-1 bg-blue-100 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-100 font-medium`} 
+                  className={`${className} inline-block px-2 py-1 mx-1 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-800 dark:text-indigo-200 font-mono text-sm md:text-base shadow-sm`} 
                   {...props}
                 >
                   {children}
@@ -218,85 +301,41 @@ export function formatAIResponse(
 }
 
 /**
- * Simple and precise mathematical formatting
+ * Specialized formatter for mathematical step-by-step solutions
  */
-function preprocessText(text: string): string {
+export function formatMathSolution(text: string, theme: 'light' | 'dark' = 'dark'): React.ReactNode {
+  // Enhanced preprocessing specifically for mathematical solutions
   let processed = text;
-
-  // Step 1: Normalize line endings
-  processed = processed.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-  // Step 2: Handle step headings
-  processed = processed.replace(/^(Step\s+\d+[:.]\s*.*?)$/gmi, '## $1');
-  processed = processed.replace(/^(Final\s+Answer[:.]\s*.*?)$/gmi, '## $1');
-
-  // Step 3: Handle boxed expressions
-  processed = processed.replace(/\\boxed\s*\(([^)]+)\)/g, '$$\\boxed{$1}$$');
-  processed = processed.replace(/boxed\s*\(([^)]+)\)/g, '$$\\boxed{$1}$$');
-
-  // Step 4: Convert backtick expressions to math (only if they contain math symbols)
-  processed = processed.replace(/`([^`]+)`/g, (match, content) => {
-    // Only convert if it contains clear mathematical notation
-    if (/[\^_=+\-*/(){}\\]|[a-zA-Z]\s*[=<>]|\d+\s*[a-zA-Z]|[a-zA-Z]\s*\d+/.test(content)) {
-      // Check if it should be block or inline
-      if (content.includes('=') && content.length > 10) {
-        return `$$${content}$$`;
-      } else {
-        return `$${content}$`;
+  
+  // More aggressive mathematical expression detection
+  const lines = processed.split('\n');
+  const processedLines = lines.map(line => {
+    const trimmedLine = line.trim();
+    
+    // Skip if it's already a heading or contains certain keywords
+    if (trimmedLine.startsWith('#') || trimmedLine.includes('Step') || trimmedLine.includes('Question') || trimmedLine.includes('Answer:') || trimmedLine.length < 3) {
+      return line;
+    }
+    
+    // Check if line contains mathematical expressions
+    if (/[=+\-*/^(){}[\]]/.test(trimmedLine) && !/^[A-Z][a-z]/.test(trimmedLine)) {
+      // Wrap in math delimiters if not already wrapped
+      if (!trimmedLine.startsWith('$$') && !trimmedLine.endsWith('$$')) {
+        return `$$${trimmedLine}$$`;
       }
     }
-    return match; // Keep as code if not mathematical
+    
+    return line;
   });
-
-  // Step 5: Handle simple mathematical expressions on their own lines
-  processed = processed.replace(/^([^$\n]*[=<>≤≥≠]\s*[^$\n]*)$/gm, (match) => {
-    // Skip if already in math mode, is a heading, or too short
-    if (match.includes('$') || match.match(/^#+\s/) || match.length < 5) {
-      return match;
-    }
-    // Only convert if it looks like a mathematical equation
-    if (/[a-zA-Z0-9]\s*[=<>≤≥≠]\s*[a-zA-Z0-9]/.test(match)) {
-      return `$$${match.trim()}$$`;
-    }
-    return match;
-  });
-
-  // Step 6: Clean up math expressions - fix the broken $$$$1$$ pattern
-  processed = processed.replace(/\$\$([^$]+)\$\$/g, (match, content) => {
-    return `\n\n$$${content}$$\n\n`;
-  });
-
-  // Step 7: Handle basic mathematical symbols (only inside math blocks)
-  processed = processed.replace(/\$\$([^$]+)\$\$/g, (match, content) => {
-    let mathContent = content;
-    mathContent = mathContent.replace(/\s*÷\s*/g, ' \\div ');
-    mathContent = mathContent.replace(/\s*×\s*/g, ' \\times ');
-    return `$$${mathContent}$$`;
-  });
-
-  // Step 8: Handle inline math symbols
-  processed = processed.replace(/\$([^$]+)\$/g, (match, content) => {
-    let mathContent = content;
-    mathContent = mathContent.replace(/\s*÷\s*/g, ' \\div ');
-    mathContent = mathContent.replace(/\s*×\s*/g, ' \\times ');
-    return `$${mathContent}$`;
-  });
-
-  // Step 9: Remove asterisks from inside math expressions
-  // Remove from block math
-  processed = processed.replace(/\$\$([^$]+)\$\$/g, (match, content) => {
-    return `$$${content.replace(/\*/g, '')}$$`;
-  });
-  // Remove from inline math
-  processed = processed.replace(/\$([^$]+)\$/g, (match, content) => {
-    return `$${content.replace(/\*/g, '')}$`;
-  });
-
-  // Step 10: Final cleanup
-  processed = processed.replace(/\n{3,}/g, '\n\n'); // Limit excessive newlines
-  processed = processed.replace(/\$\$\s*\$\$/g, ''); // Remove empty math blocks
-
-  return processed.trim();
+  
+  processed = processedLines.join('\n');
+  
+  // Additional cleanup for common issues
+  processed = processed.replace(/\$\$\$\$/g, '$$');
+  processed = processed.replace(/(\$\$[^$\n]+\$\$)/g, '\n\n$1\n\n');
+  processed = processed.replace(/\n{3,}/g, '\n\n');
+  
+  return formatAIResponse(processed, { theme });
 }
 
 /**
@@ -322,7 +361,11 @@ export function useAIResponseFormatter(theme: 'light' | 'dark' = 'dark') {
     return formatAIResponse(text, { className, theme });
   }, [theme]);
 
-  return { formatResponse };
+  const formatMathResponse = React.useCallback((text: string) => {
+    return formatMathSolution(text, theme);
+  }, [theme]);
+
+  return { formatResponse, formatMathResponse };
 }
 
 // Export types for TypeScript users

@@ -168,7 +168,7 @@ const StudyBuddy: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 animate-fade-in-up">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mx-auto">
           <div className="flex items-center space-x-4">
             <div className="bg-orange-500 bg-opacity-20 p-3 rounded-xl">
               <i className="bx bx-message-dots text-2xl text-orange-500"></i>
@@ -187,10 +187,10 @@ const StudyBuddy: React.FC = () => {
 
       {/* Chat Container */}
       <div className="flex-1 flex justify-center px-4 py-6">
-        <div className="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 flex flex-col h-[calc(100vh-200px)] animate-fade-in-up animation-delay-300">
+        <div className="w-full h-full bg-gray-800 flex flex-col flex-1 min-h-screen animate-fade-in-up animation-delay-300 relative">
           
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6" style={{ paddingBottom: "104px" }}>
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -255,7 +255,17 @@ const StudyBuddy: React.FC = () => {
 
           {/* Quick Prompts */}
           {messages.length === 1 && (
-            <div className="px-6 py-4 border-t border-gray-700">
+            <div
+              className="px-6 py-4 border-t border-gray-700"
+              style={{
+                position: "fixed",
+                bottom: "104px",
+                left: "288px",
+                width: "calc(100% - 288px)",
+                zIndex: 10,
+                background: "#1f2937"
+              }}
+            >
               <p className="text-gray-400 text-sm mb-3">Quick prompts to get started:</p>
               <div className="flex flex-wrap gap-2">
                 {quickPrompts.map((prompt, idx) => (
@@ -271,91 +281,101 @@ const StudyBuddy: React.FC = () => {
             </div>
           )}
 
-          {/* Input Area */}
-          <div className="px-6 py-4 border-t border-gray-700">
-<div className="flex items-center space-x-3">
-  {imagePreview && (
-    <div className="flex items-center space-x-1">
-      <img
-        src={imagePreview}
-        alt="Preview"
-        className="rounded-lg"
-        style={{ width: 40, height: 40, objectFit: "cover" }}
-      />
-      <button
-        onClick={() => {
-          setImagePreview(null);
-          setImageFile(null);
-        }}
-        className="text-gray-400 hover:text-red-500 text-xs ml-1"
-        title="Remove"
-      >
-        <i className="bx bx-x"></i>
-      </button>
-    </div>
-  )}
-  <div className="flex-1 relative flex items-center">
-    <input
-      ref={inputRef}
-      type="text"
-      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-opacity-20 transition-all duration-300"
-      placeholder="Ask me anything about your studies... (or what to do with your image)"
-      value={input}
-      onChange={(e) => setInput(e.target.value)}
-      onKeyDown={handleInputKeyDown}
-      onPaste={handlePaste}
-      disabled={loading}
-    />
-    {input && (
-      <button
-        onClick={() => setInput("")}
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-      >
-        <i className="bx bx-x text-lg"></i>
-      </button>
-    )}
-  </div>
-  <input
-    type="file"
-    accept="image/*"
-    style={{ display: "none" }}
-    id="image-upload"
-    onChange={handleImageChange}
-    disabled={loading}
-  />
-  <label htmlFor="image-upload" className="cursor-pointer">
-    <span className="px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white hover:bg-gray-600 transition-colors flex items-center space-x-2">
-      <i className="bx bx-image text-lg"></i>
-      <span>Upload Photo</span>
-    </span>
-  </label>
-  <button
-    onClick={sendMessage}
-    disabled={loading || (!input.trim() && !imageFile)}
-    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
-      loading || (!input.trim() && !imageFile)
-        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-        : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg transform hover:scale-105"
-    }`}
-  >
-    {loading ? (
-      <>
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-        <span>Sending</span>
-      </>
-    ) : (
-      <>
-        <span>Send</span>
-        <i className="bx bx-send text-lg"></i>
-      </>
-    )}
-  </button>
-</div>
-{/* Image preview is now inside the input area */}
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Press Enter to send • You can upload or paste a photo and type what you want Study Buddy to do with it
-            </p>
+        </div>
+        {/* Input Area */}
+        <div
+          className="px-6 py-4 border-t border-gray-700"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: "288px",
+            width: "calc(100% - 288px)",
+            zIndex: 20,
+            background: "#1f2937"
+          }}
+        >
+          <div className="flex items-center space-x-3">
+            {imagePreview && (
+              <div className="flex items-center space-x-1">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="rounded-lg"
+                  style={{ width: 40, height: 40, objectFit: "cover" }}
+                />
+                <button
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageFile(null);
+                  }}
+                  className="text-gray-400 hover:text-red-500 text-xs ml-1"
+                  title="Remove"
+                >
+                  <i className="bx bx-x"></i>
+                </button>
+              </div>
+            )}
+            <div className="flex-1 relative flex items-center">
+              <input
+                ref={inputRef}
+                type="text"
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-opacity-20 transition-all duration-300"
+                placeholder="Ask me anything about your studies... (or what to do with your image)"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                onPaste={handlePaste}
+                disabled={loading}
+              />
+              {input && (
+                <button
+                  onClick={() => setInput("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <i className="bx bx-x text-lg"></i>
+                </button>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              id="image-upload"
+              onChange={handleImageChange}
+              disabled={loading}
+            />
+            <label htmlFor="image-upload" className="cursor-pointer">
+              <span className="px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white hover:bg-gray-600 transition-colors flex items-center space-x-2">
+                <i className="bx bx-image text-lg"></i>
+                <span>Upload Photo</span>
+              </span>
+            </label>
+            <button
+              onClick={sendMessage}
+              disabled={loading || (!input.trim() && !imageFile)}
+              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                loading || (!input.trim() && !imageFile)
+                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg transform hover:scale-105"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Sending</span>
+                </>
+              ) : (
+                <>
+                  <span>Send</span>
+                  <i className="bx bx-send text-lg"></i>
+                </>
+              )}
+            </button>
           </div>
+          {/* Image preview is now inside the input area */}
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Press Enter to send • You can upload or paste a photo and type what you want Study Buddy to do with it
+          </p>
         </div>
       </div>
     </div>
