@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AnalyzeWithBuddy from "../../components/AnalyzeWithBuddy";
+import "boxicons/css/boxicons.min.css";
 
 type Note = {
   id: string;
@@ -43,25 +44,39 @@ export default function MyNotesWithBuddy() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-black flex flex-col items-center px-2 sm:px-4 py-4 sm:py-8">
-      <h1 className="text-3xl sm:text-4xl font-bold text-orange-400 mb-8 text-center">
-        Analyze documents with Buddy (AI)
-      </h1>
-      <div className="w-full max-w-6xl flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 px-4 py-6">
+      {/* Header */}
+      <div className="mb-8 animate-fade-in-up">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 flex items-center">
+          <i className="bx bx-brain text-orange-500 mr-3"></i>
+          AI Document Analyzer
+        </h1>
+        <p className="text-gray-400 text-lg">Upload PDFs and chat with AI to analyze your documents</p>
+      </div>
+
+      <div className="max-w-7xl mx-auto">
         {loading ? (
-          <div className="text-center text-orange-400 font-semibold py-8">Loading notes...</div>
+          <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mb-4"></div>
+            <p className="text-white text-lg">Loading your documents...</p>
+          </div>
         ) : error ? (
-          <div className="text-center text-red-500 font-semibold py-8">
-            {error}
+          <div className="bg-red-900 border border-red-700 text-red-300 px-6 py-8 rounded-2xl text-center animate-fade-in-up">
+            <i className="bx bx-error-circle text-4xl mb-4"></i>
+            <h3 className="text-xl font-semibold mb-2">Error Loading Documents</h3>
+            <p className="mb-4">{error}</p>
             <button
-              className="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2"
               onClick={fetchNotes}
             >
-              Retry
+              <i className="bx bx-refresh"></i>
+              <span>Retry</span>
             </button>
           </div>
         ) : (
-          <AnalyzeWithBuddy notes={notes} refreshNotes={fetchNotes} />
+          <div className="animate-fade-in-up animation-delay-300">
+            <AnalyzeWithBuddy notes={notes} refreshNotes={fetchNotes} />
+          </div>
         )}
       </div>
     </div>
