@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
+# Copy environment file
+COPY .env ./
+
 # Install all dependencies (including devDependencies) for build
 RUN npm ci --no-audit --no-fund
 
