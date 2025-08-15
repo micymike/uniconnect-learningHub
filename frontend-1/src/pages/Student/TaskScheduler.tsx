@@ -41,7 +41,7 @@ const TaskScheduler: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com"}/task-scheduler/schedules?userId=${userId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api"}/task-scheduler/schedules?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setSchedules(Array.isArray(data) ? data : []);
