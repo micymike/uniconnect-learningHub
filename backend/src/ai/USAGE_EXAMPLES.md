@@ -24,6 +24,47 @@ curl -X POST http://localhost:3000/ai/flashcards \
   }'
 ```
 
+## PDF/Document Analysis and Chat (NEW)
+
+### Ask a Question About an Uploaded PDF
+```bash
+curl -X POST http://localhost:3000/ai/study-assist \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -F "question=What is the main topic discussed on page 2?" \
+  -F "file=@/path/to/document.pdf"
+```
+
+### Ask a Question About a PDF from a Remote URL (e.g., Cloudflare)
+```bash
+curl -X POST http://localhost:3000/ai/study-assist \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -F "question=Summarize the introduction section." \
+  -F "pdfUrl=https://your-cloudflare-url.com/document.pdf"
+```
+
+### JavaScript/TypeScript Example (Frontend Integration)
+const askAboutPDF = async (question: string, pdfFile: File | null, pdfUrl: string | null, jwtToken: string) => {
+  const formData = new FormData();
+  formData.append('question', question);
+  if (pdfFile) {
+    formData.append('file', pdfFile);
+  }
+  if (pdfUrl) {
+    formData.append('pdfUrl', pdfUrl);
+  }
+
+  const response = await fetch('http://localhost:3000/ai/study-assist', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${jwtToken}`,
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+  return result.answer;
+};
+
 ## Enhanced Multimodal Support
 
 ### Ask Question with Image (Math Problem)
@@ -311,8 +352,6 @@ curl -X POST http://localhost:3000/ai/motivation \
 
 ## JavaScript/TypeScript Examples
 
-### Using in Frontend Application
-
 ```typescript
 // Study Schedule Generation
 const generateStudySchedule = async (studentData: any) => {
@@ -382,6 +421,24 @@ const fileToBase64 = (file: File): Promise<string> => {
 const playAudioResponse = (base64Audio: string) => {
   const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
   audio.play();
+};
+
+// PDF/Document Analysis and Chat (NEW)
+const askAboutPDF = async (question: string, pdfFile: File, jwtToken: string) => {
+  const formData = new FormData();
+  formData.append('question', question);
+  formData.append('file', pdfFile);
+
+  const response = await fetch('http://localhost:3000/ai/study-assist', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${jwtToken}`,
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+  return result.answer;
 };
 
 // Expense Tracking

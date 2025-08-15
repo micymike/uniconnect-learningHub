@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const API_URL = "http://localhost:3004/api";
+const API_URL = process.env.REACT_APP_API_URL;
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register" | "forgotPassword">("login");

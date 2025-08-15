@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 
+// do not change this file
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3004/api";
+
 type Note = {
   id: string;
   name: string;
@@ -25,6 +29,8 @@ export default function MyNotes() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [textContent, setTextContent] = useState<string>("");
 
   useEffect(() => {
     fetchNotes();
@@ -34,7 +40,7 @@ export default function MyNotes() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:3004/api/notes", {
+      const res = await fetch(`${API_URL}/notes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch notes");
@@ -72,7 +78,7 @@ export default function MyNotes() {
       formData.append("file", file, file.name);
       formData.append("name", noteName.trim());
       formData.append("contentType", file.type || "application/octet-stream");
-      const res = await fetch("http://localhost:3004/api/notes/upload", {
+      const res = await fetch(`${API_URL}/notes/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -87,6 +93,106 @@ export default function MyNotes() {
       setUploading(false);
     }
   };
+
+const handleViewNote = async (note: Note) => {
+  console.log("View button clicked for note:", note);
+  setSelectedNote(note);
+  const filename = note.url.split('/').pop() || '';
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  if (['txt', 'md'].includes(ext)) {
+    try {
+      const res = await fetch(note.url);
+      const text = await res.text();
+      setTextContent(text);
+    } catch {
+      setTextContent("Failed to load text content.");
+    }
+  } else {
+    setTextContent("");
+  }
+};
+
+  const renderViewer = () => {
+  if (!selectedNote) return null;
+  console.log("Rendering modal for note:", selectedNote);
+  const filename = selectedNote.url.split('/').pop() || '';
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  if (['pdf'].includes(ext)) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-3xl relative flex flex-col items-center">
+          <button
+            className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl"
+            onClick={() => setSelectedNote(null)}
+          >
+            &times;
+          </button>
+          <h2 className="text-xl font-bold mb-4 text-orange-500">{selectedNote.name}</h2>
+          <iframe
+            src={selectedNote.url}
+            title={selectedNote.name}
+            width="100%"
+            height="600px"
+            className="rounded border"
+          />
+        </div>
+      </div>
+    );
+  }
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl relative flex flex-col items-center">
+          <button
+            className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl"
+            onClick={() => setSelectedNote(null)}
+          >
+            &times;
+          </button>
+          <h2 className="text-xl font-bold mb-4 text-orange-500">{selectedNote.name}</h2>
+          <img src={selectedNote.url} alt={selectedNote.name} className="max-w-full max-h-[500px] rounded" />
+        </div>
+      </div>
+    );
+  }
+  if (['txt', 'md'].includes(ext)) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl relative flex flex-col items-center">
+          <button
+            className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl"
+            onClick={() => setSelectedNote(null)}
+          >
+            &times;
+          </button>
+          <h2 className="text-xl font-bold mb-4 text-orange-500">{selectedNote.name}</h2>
+          <pre className="bg-gray-100 rounded p-4 w-full max-h-[400px] overflow-auto text-sm text-gray-800">{textContent}</pre>
+        </div>
+      </div>
+    );
+  }
+  // For other files, show download button
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative flex flex-col items-center">
+        <button
+          className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl"
+          onClick={() => setSelectedNote(null)}
+        >
+          &times;
+        </button>
+        <h2 className="text-xl font-bold mb-4 text-orange-500">{selectedNote.name}</h2>
+        <a
+          href={selectedNote.url}
+          download
+          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded font-semibold transition"
+        >
+          Download File
+        </a>
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen w-full bg-black flex flex-col items-center px-2 sm:px-4 py-4 sm:py-8">
@@ -161,20 +267,33 @@ export default function MyNotes() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 sm:mt-0">
-                  <a
-                    href={note.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition text-center flex-1 sm:flex-none"
-                  >
-                    {isViewable ? '👁️ View' : '⬇️ Download'}
-                  </a>
+{isViewable ? (
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      handleViewNote(note);
+    }}
+    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition text-center flex-1 sm:flex-none"
+  >
+    👁️ View
+  </button>
+) : (
+  <a
+    href={note.url}
+    download
+    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition text-center flex-1 sm:flex-none"
+  >
+    ⬇️ Download
+  </a>
+)}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+      {renderViewer()}
     </div>
   );
 }

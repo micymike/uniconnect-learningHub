@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {ToastContainer , toast } from 'react-toastify';
 
-const API_URL = "http://localhost:3004/api";
+const API_URL = process.env.REACT_APP_API_URL;
 
 interface Lesson {
   id: string;

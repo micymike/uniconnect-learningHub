@@ -26,7 +26,7 @@ interface User {
   fullName: string;
 }
 
-const API_URL = "http://localhost:3004/api";
+const API_URL = process.env.REACT_APP_API_URL;
 
 const QuizzesPage = () => {
   const navigate = useNavigate();

@@ -17,6 +17,7 @@ import StudyBuddy from './pages/Student/StudyBuddy';
 import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 import StudyAssistant from './pages/Student/StudyAssistant';
 import MyNotes from './pages/Student/MyNotes';
+import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -151,7 +152,7 @@ function App() {
           <Route path="chatbot" element={<StudyBuddy />} />
           <Route path="flashcards" element={<FlashcardGenerator />} />
           <Route path="study-assistant" element={<StudyAssistant />} />
-          <Route path="mynotes" element={<MyNotes />} />
+<Route path="mynotes" element={<MyNotesWithBuddy />} />
         </Route>
       </Routes>
     </Router>

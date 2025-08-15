@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_URL = "http://localhost:3004/api";
+const API_URL = process.env.REACT_APP_API_URL;
 type Course = {
   id?: string;  // Changed from _id to id to match backend
   title: string;

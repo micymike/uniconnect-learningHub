@@ -22,7 +22,18 @@ export class NotesService {
 
   private bucket = process.env.CLOUDFLARE_R2_BUCKET || process.env.CLOUDFLARE_BUCKET_NAME || "";
 
-  async uploadNote(userId: string, name: string, file: Express.Multer.File, contentType?: string) {
+  async uploadNote(
+    userId: string,
+    name: string,
+    file: Express.Multer.File,
+    contentType?: string,
+    folder?: string,
+    tags?: string[],
+    color_label?: string,
+    icon?: string,
+    file_type?: string,
+    ocr_text?: string
+  ) {
     try {
       // Upload file to Cloudflare R2
       const key = `${userId}/${Date.now()}_${file.originalname}`;
@@ -36,10 +47,20 @@ export class NotesService {
           ContentType: finalMimeType,
           CacheControl: 'public, max-age=31536000',
           ContentDisposition: `inline; filename="${file.originalname}"`,
+          Metadata: {
+            'original-name': file.originalname,
+            'upload-time': new Date().toISOString(),
+          },
         })
       );
-      // Construct public URL (assuming public bucket)
-      const url = `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
+      // Use custom domain or R2 dev subdomain for public access
+      const publicDomain = process.env.CLOUDFLARE_R2_CUSTOM_DOMAIN || 
+                          (() => {
+  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
+  if (!accessKeyId) throw new Error("CLOUDFLARE_R2_ACCESS_KEY_ID is not set");
+  return `https://pub-${accessKeyId.substring(0, 8)}.r2.dev`;
+})()
+      const url = `${publicDomain}/${key}`;
       const uploadedAt = new Date().toISOString();
 
       // Insert note metadata into Supabase
@@ -51,6 +72,12 @@ export class NotesService {
             name,
             url,
             uploaded_at: uploadedAt,
+            folder: folder || null,
+            tags: tags || [],
+            color_label: color_label || null,
+            icon: icon || null,
+            file_type: file_type || file.mimetype || null,
+            ocr_text: ocr_text || null,
           },
         ])
         .select()
