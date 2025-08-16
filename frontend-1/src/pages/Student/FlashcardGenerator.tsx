@@ -32,7 +32,7 @@ export default function FlashcardGenerator() {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("numQuestions", numQuestions.toString());
-        response = await fetch("http://localhost:3004/api/ai/flashcards", {
+        response = await fetch("https://uniconnect-learninghub-bc.onrender.com/api/ai/flashcards", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -40,7 +40,7 @@ export default function FlashcardGenerator() {
           body: formData,
         });
       } else {
-        response = await fetch("http://localhost:3004/api/ai/flashcards", {
+        response = await fetch("https://uniconnect-learninghub-bc.onrender.com/api/ai/flashcards", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export default function FlashcardGenerator() {
     try {
       const token = localStorage.getItem("token") || "";
       const fc = flashcards[idx];
-      const response = await fetch("http://localhost:3004/api/ai/explain-flashcard", {
+      const response = await fetch("https://uniconnect-learninghub-bc.onrender.com/api/ai/explain-flashcard", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
