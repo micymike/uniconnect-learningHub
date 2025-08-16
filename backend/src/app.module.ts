@@ -16,10 +16,10 @@ import { ChatModule } from './chat/chat.module';
 @Module({
   imports: [
     NotesModule,
-    ConfigModule.forRoot({
-      isGlobal: true, 
+ConfigModule.forRoot({
+  isGlobal: true,
       envFilePath: '${process.cwd()}/.env' 
-    }),
+}),
     SupabaseModule,
     UsersModule,
     AnalyticsModule,
