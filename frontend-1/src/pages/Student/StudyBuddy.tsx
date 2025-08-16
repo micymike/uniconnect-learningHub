@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import "boxicons/css/boxicons.min.css";
 import { formatAIResponse } from "../../utils/formatAIResponse";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com";
+const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api";
 const MAX_MESSAGES = 50; // Limit message history
 
 interface Message {
