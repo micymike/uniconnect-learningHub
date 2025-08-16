@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useSocket } from '../../hooks/useSocket';
+import Toast from '../../components/Toast';
 import 'boxicons/css/boxicons.min.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-bc.onrender.com/api';
@@ -47,6 +48,7 @@ const StudyChat: React.FC = () => {
   const [studyMates, setStudyMates] = useState<StudyMate[]>([]);
   const [selectedMate, setSelectedMate] = useState<StudyMate | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -54,7 +56,8 @@ const StudyChat: React.FC = () => {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  
+  const [toast, setToast] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -65,11 +68,37 @@ const StudyChat: React.FC = () => {
     }
   }, []);
 
+  // Filter messages for the current conversation
+  const filteredMessages = selectedMate && user?.id 
+    ? messages.filter(message => 
+        (message.senderId === user.id && message.receiverId === selectedMate.user.id) ||
+        (message.senderId === selectedMate.user.id && message.receiverId === user.id)
+      )
+    : [];
+
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user?.id) return;
+
+    // Join rooms for all study mates when socket connects
+    studyMates.forEach(mate => {
+      socket.emit('joinRoom', {
+        userId: user.id,
+        otherUserId: mate.user.id
+      });
+    });
 
     socket.on('newMessage', (message: Message) => {
-      setMessages(prev => [...prev, message]);
+      console.log('Received new message:', message);
+      console.log('message.senderId:', message.senderId, 'message.receiverId:', message.receiverId);
+      
+      setMessages(prev => {
+        // Check if message already exists
+        const exists = prev.some(m => m.id === message.id);
+        if (exists) return prev;
+        
+        // Add message to the array - it will be filtered in render
+        return [...prev, message];
+      });
     });
 
     socket.on('userTyping', ({ userId, isTyping }) => {
@@ -98,11 +127,12 @@ const StudyChat: React.FC = () => {
       socket.off('messageEdited');
       socket.off('messageDeleted');
     };
-  }, [socket]);
+  }, [socket, user?.id, studyMates, selectedMate]);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [filteredMessages]);
 
   useEffect(() => {
     loadStudyMates();
@@ -146,9 +176,11 @@ setStudyMates(
   };
 
   const loadMessages = async (mateId: string) => {
+    setMessagesLoading(true);
     try {
       if (!mateId) {
         setMessages([]);
+        setMessagesLoading(false);
         return;
       }
       const token = localStorage.getItem('token');
@@ -157,23 +189,64 @@ setStudyMates(
       });
       if (!response.ok) {
         setMessages([]);
+        setToast({ type: 'error', message: `Failed to load messages (${response.status}): ${response.statusText}` });
+        setMessagesLoading(false);
         return;
       }
       const data = await response.json();
-      setMessages(Array.isArray(data) ? data : []);
-    } catch (error) {
+      if (!Array.isArray(data)) {
+        setMessages([]);
+        setToast({ type: 'error', message: 'Invalid response format from server.' });
+        setMessagesLoading(false);
+        return;
+      }
+      // Empty array is valid - it just means no messages yet
+      setMessages(data);
+    } catch (error: any) {
       setMessages([]);
+      setToast({ type: 'error', message: `Error loading messages: ${error?.message || 'Unknown error'}` });
       console.error('Error loading messages:', error);
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !selectedMate || !socket) return;
+    if (!user || !user.id) {
+      setToast({ type: 'error', message: 'User not loaded. Please log in again.' });
+      return;
+    }
+    if (!selectedMate) {
+      setToast({ type: 'error', message: 'No study mate selected.' });
+      return;
+    }
+    if (!socket || !isConnected) {
+      setToast({ type: 'error', message: 'Not connected to chat server.' });
+      return;
+    }
+    if (!newMessage.trim()) return;
 
+    const messageContent = newMessage.trim();
+    
+    // Create temporary message for immediate UI update
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      senderId: user.id,
+      receiverId: selectedMate.user.id,
+      content: messageContent,
+      timestamp: new Date(),
+      isEdited: false
+    };
+    
+    // Add message to UI immediately
+    setMessages(prev => [...prev, tempMessage]);
+    
+    // Send to server
+    console.log('Sending message:', { senderId: user.id, receiverId: selectedMate.user.id, content: messageContent });
     socket.emit('sendMessage', {
       senderId: user.id,
       receiverId: selectedMate.user.id,
-      content: newMessage.trim()
+      content: messageContent
     });
 
     setNewMessage('');
@@ -280,8 +353,11 @@ setStudyMates(
       return;
     }
     setSelectedMate(mate);
+    // Clear messages immediately to avoid showing wrong conversation
+    setMessages([]);
     loadMessages(mate.user.id);
-    if (socket) {
+    if (socket && user?.id) {
+      console.log('Joining room for users:', user.id, mate.user.id);
       socket.emit('joinRoom', {
         userId: user.id,
         otherUserId: mate.user.id
@@ -302,6 +378,13 @@ setStudyMates(
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex">
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
       {/* Sidebar */}
       <div className={`${selectedMate ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 bg-gray-800 border-r border-gray-700 flex-col`}>
         {/* Header */}
@@ -407,11 +490,11 @@ setStudyMates(
       </div>
 
       {/* Chat Area */}
-      <div className={`${selectedMate ? 'flex' : 'hidden lg:flex'} flex-1 flex-col`}>
+      <div className={`${selectedMate ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-screen`}>
         {selectedMate ? (
           <>
             {/* Chat Header */}
-            <div className="bg-gray-800 border-b border-gray-700 p-4">
+            <div className="bg-gray-800 border-b border-gray-700 p-4 flex-shrink-0">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setSelectedMate(null)}
@@ -437,84 +520,97 @@ setStudyMates(
                         ? `Last seen ${formatTime(selectedMate.last_seen)}`
                         : 'Last seen Unknown'}
                     {typingUsers.has(selectedMate.user.id) && ' • typing...'}
+                    {' • '}{filteredMessages.length} messages
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.senderId === user?.id
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-700 text-white'
-                  }`}>
-                    {editingMessage === message.id ? (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full bg-transparent border-b border-gray-300 focus:outline-none"
-                          onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
-                        />
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={saveEdit}
-                            className="text-xs bg-green-500 px-2 py-1 rounded"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingMessage(null)}
-                            className="text-xs bg-gray-500 px-2 py-1 rounded"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p>{message.content}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs opacity-70">
-                            {formatTime(message.timestamp)}
-                            {message.isEdited && ' (edited)'}
-                          </span>
-                          {message.senderId === user?.id && (
-                            <div className="flex space-x-1">
-                              {canEditMessage(message) && (
-                                <button
-                                  onClick={() => editMessage(message.id, message.content)}
-                                  className="text-xs opacity-70 hover:opacity-100"
-                                >
-                                  <i className="bx bx-edit"></i>
-                                </button>
-                              )}
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto overflow-x-hidden">
+              {messagesLoading ? (
+                <div className="text-center text-gray-400 mt-8">
+                  <p>Loading messages...</p>
+                </div>
+              ) : filteredMessages.length === 0 ? (
+                <div className="text-center text-gray-400 mt-8">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                <>
+                  {filteredMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        message.senderId === user?.id
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-700 text-white'
+                      }`}>
+                        {editingMessage === message.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="w-full bg-transparent border-b border-gray-300 focus:outline-none"
+                              onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
+                            />
+                            <div className="flex space-x-2">
                               <button
-                                onClick={() => deleteMessage(message.id)}
-                                className="text-xs opacity-70 hover:opacity-100"
+                                onClick={saveEdit}
+                                className="text-xs bg-green-500 px-2 py-1 rounded"
                               >
-                                <i className="bx bx-trash"></i>
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingMessage(null)}
+                                className="text-xs bg-gray-500 px-2 py-1 rounded"
+                              >
+                                Cancel
                               </button>
                             </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
+                          </div>
+                        ) : (
+                          <>
+                            <p>{message.content}</p>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs opacity-70">
+                                {formatTime(message.timestamp)}
+                                {message.isEdited && ' (edited)'}
+                              </span>
+                              {message.senderId === user?.id && (
+                                <div className="flex space-x-1">
+                                  {canEditMessage(message) && (
+                                    <button
+                                      onClick={() => editMessage(message.id, message.content)}
+                                      className="text-xs opacity-70 hover:opacity-100"
+                                    >
+                                      <i className="bx bx-edit"></i>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => deleteMessage(message.id)}
+                                    className="text-xs opacity-70 hover:opacity-100"
+                                  >
+                                    <i className="bx bx-trash"></i>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
             </div>
 
             {/* Message Input */}
-            <div className="bg-gray-800 border-t border-gray-700 p-4">
+            <div className="bg-gray-800 border-t border-gray-700 p-4 flex-shrink-0">
               <div className="flex space-x-3">
                 <input
                   type="text"
