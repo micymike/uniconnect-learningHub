@@ -14,6 +14,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import QuizzesPage from './pages/Admin/Quizzes';
 import StudentDashboardLayout from './pages/Student/StudentDashboardLayout';
 import StudyBuddy from './pages/Student/StudyBuddy';
+import StudyChat from './pages/Student/StudyChat';
 import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 import TaskScheduler from './pages/Student/TaskScheduler';
 
@@ -166,6 +167,7 @@ function App() {
           <Route path="help" element={<div>Help Page</div>} />
           <Route path="feedback" element={<Feedback />} />
           <Route path="chatbot" element={<StudyBuddy />} />
+          <Route path="study-chat" element={<StudyChat />} />
           <Route path="flashcards" element={<FlashcardGenerator />} />
           <Route path="task-scheduler" element={<TaskScheduler />} />
 

@@ -5,11 +5,11 @@ import "boxicons/css/boxicons.min.css";
 const navItems = [
   { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
   { label: "Courses", path: "courses", icon: "bx bx-book" }
-
 ];
 
 const aiTools = [
   { label: "Study Buddy", path: "/student/chatbot", icon: "bx bx-message-dots" },
+  { label: "Study Chat", path: "/student/study-chat", icon: "bx bx-chat" },
   { label: "Flashcards", path: "/student/flashcards", icon: "bx bx-collection" },
   { label: "Task Scheduler", path: "/student/task-scheduler", icon: "bx bx-calendar-check" },
   { label: "My Notes", path: "/student/mynotes", icon: "bx bx-notepad" },

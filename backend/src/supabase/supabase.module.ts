@@ -23,7 +23,7 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js';
       provide: 'SUPABASE_ADMIN_CLIENT',
       useFactory: (configService: ConfigService) => {
         const supabaseUrl = configService.get<string>('SUPABASE_URL');
-        const serviceRoleKey = configService.get<string>('SUPABASE_SERVICE_KEY');
+        const serviceRoleKey = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
         
         if (!supabaseUrl || !serviceRoleKey) {
           throw new Error('Supabase admin credentials not configured');
