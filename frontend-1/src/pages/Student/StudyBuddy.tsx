@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import "boxicons/css/boxicons.min.css";
-import { formatAIResponse } from "../../utils/formatAIResponse";
+// import { formatAIResponse } from "../../utils/formatAIResponse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api";
 const MAX_MESSAGES = 50; // Limit message history
@@ -115,7 +115,7 @@ const StudyBuddy: React.FC = () => {
           const newMessages = [
             ...prev,
             {
-              sender: "ai",
+              sender: "ai" as "ai",
               text:
                 imageFile
                   ? data.explanation || "Here's what I see in your image."
@@ -133,7 +133,7 @@ const StudyBuddy: React.FC = () => {
           const newMessages = [
             ...prev,
             {
-              sender: "ai",
+              sender: "ai" as "ai",
               text: imageFile
                 ? "Sorry, I couldn't analyze the image. Please try again! 🔄"
                 : "Sorry, I'm having trouble connecting right now. Please try again in a moment! 🔄",
@@ -254,7 +254,7 @@ const StudyBuddy: React.FC = () => {
                       <img src={msg.imageUrl} alt="Uploaded" className="mb-2 rounded-lg max-w-xs" />
                     )}
                     {msg.sender === "ai"
-  ? formatAIResponse(msg.text)
+  ? <p className="text-sm leading-relaxed whitespace-pre-line">{msg.text}</p>
   : <p className="text-sm leading-relaxed">{msg.text}</p>
 }
                   </div>
