@@ -80,12 +80,12 @@ const StudyBuddy: React.FC = () => {
 
       let res, data;
       if (imageFile) {
-        // Send both text and image as multipart/form-data
+        // Send both text and image as multipart/form-data to /ai/chat
         const formData = new FormData();
         formData.append("image", imageFile);
-        formData.append("prompt", input.trim());
+        formData.append("message", input.trim());
 
-        res = await fetch(`${API_BASE}/ai/analyze-image`, {
+        res = await fetch(`${API_BASE}/ai/chat`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token || ""}`,
@@ -118,7 +118,7 @@ const StudyBuddy: React.FC = () => {
               sender: "ai" as "ai",
               text:
                 imageFile
-                  ? data.explanation || "Here's what I see in your image."
+                  ? data.reply || data.explanation || "Here's what I see in your image."
                   : data.reply || "I'm here to help you learn! 📚",
               timestamp: new Date(),
             },

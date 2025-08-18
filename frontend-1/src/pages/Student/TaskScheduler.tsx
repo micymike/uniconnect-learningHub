@@ -59,7 +59,7 @@ const TaskScheduler: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com"}/task-scheduler/create?userId=${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api"}/task-scheduler/create?userId=${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userInput, preferences })

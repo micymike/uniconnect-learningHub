@@ -24,12 +24,14 @@ export class AIController {
   // Study Buddy Chatbot
   @UseGuards(JwtAuthGuard)
   @Post('chat')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async studyBuddyChat(
     @Req() req,
     @Body('message') message: string,
+    @UploadedFile() image: Express.Multer.File,
   ): Promise<{ reply: string }> {
     const userId = req.user.userId;
-    const reply = await this.aiService.studyBuddyChat(userId, message);
+    const reply = await this.aiService.studyBuddyChat(userId, message, image);
     return { reply };
   }
 
