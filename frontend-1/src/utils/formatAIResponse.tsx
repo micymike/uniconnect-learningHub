@@ -115,8 +115,18 @@ export function formatAIResponse(
 ): React.ReactNode {
   const { className = "", theme = 'dark' } = options;
 
+  // --- BEGIN PATCH: Fix for squished/italicized output ---
+
+  // Remove leading/trailing asterisks/underscores that would cause full-text italics
+  let cleanedText = text.replace(/^[_*]+|[_*]+$/g, '');
+
+  // If the text is a single long line (no line breaks), insert breaks after periods for readability
+  if (!cleanedText.includes('\n') && cleanedText.length > 80) {
+    cleanedText = cleanedText.replace(/([.?!])\s+/g, '$1\n\n');
+  }
+
   // Preprocess the text to handle special cases
-  const preprocessedText = preprocessText(text);
+  const preprocessedText = preprocessText(cleanedText);
 
   const isDark = theme === 'dark';
   const baseClasses = `prose ${isDark ? 'prose-invert' : 'prose-slate'} max-w-none ${className}`;
@@ -153,10 +163,16 @@ export function formatAIResponse(
           ),
 
           // Enhanced code blocks with syntax highlighting
-          code: ({ node, inline, className, children, ...props }) => {
+          code: (props: {
+            node?: any;
+            inline?: boolean;
+            className?: string;
+            children?: React.ReactNode;
+          }) => {
+            const { inline, className, children, ...rest } = props;
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
-            
+
             if (!inline && language) {
               return (
                 <div className="my-4 rounded-lg overflow-hidden shadow-lg">
@@ -172,7 +188,7 @@ export function formatAIResponse(
                       borderRadius: '0 0 0.5rem 0.5rem',
                       fontSize: '0.875rem',
                     }}
-                    {...props}
+                    {...rest}
                   >
                     {String(children).replace(/\n$/, '')}
                   </SyntaxHighlighter>
@@ -184,7 +200,7 @@ export function formatAIResponse(
             return (
               <code
                 className={`${isDark ? 'bg-gray-800 text-green-400' : 'bg-gray-100 text-red-600'} px-2 py-1 rounded-md text-sm font-mono`}
-                {...props}
+                {...rest}
               >
                 {children}
               </code>
