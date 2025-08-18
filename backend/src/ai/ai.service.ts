@@ -14,7 +14,8 @@ export class AIService {
   // Study Buddy Chatbot (memory-enabled, friendly)
   async studyBuddyChat(
     studentId: string,
-    message: string
+    message: string,
+    image?: Express.Multer.File
   ): Promise<string> {
     // Retrieve or create student context
     let { data: context, error } = await this.supabase
@@ -45,29 +46,94 @@ export class AIService {
 
     // Prepare conversation history for context (limit to last 20 exchanges)
     const history = context.conversation_history || [];
-    const prompt = [
-      "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.",
-      "Here is the conversation so far:",
-      ...history,
-      `Q: ${message}`,
-      "A:"
-    ].join('\n');
+    const systemPrompt = "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.";
 
-    // Call Azure OpenAI
-    const aiReply = await this.callAzureOpenAI(prompt);
+    // If image is provided, use vision model payload
+    if (image && image.buffer) {
+      try {
+        const base64Image = image.buffer.toString('base64');
+        const base = process.env.AZURE_API_BASE;
+        const deployment = process.env.AZURE_API_MODEL;
+        const apiVersion = process.env.AZURE_API_VERSION;
+        const apiKey = process.env.AZURE_API_KEY;
+        if (!base || !deployment || !apiVersion || !apiKey) {
+          throw new Error("Azure OpenAI API configuration is incomplete in environment variables.");
+        }
+        const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+        const payload = {
+          model: deployment,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: [ "Here is the conversation so far:", ...history, `Q: ${message}`, "A:" ].join('\n') },
+                { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
+              ]
+            }
+          ],
+          max_tokens: 512
+        };
+        const headers = {
+          "Content-Type": "application/json",
+          "api-key": apiKey
+        };
+        try {
+          const response = await axios.post(endpoint, payload, { headers });
+          console.log("Azure OpenAI response for image:", response.data);
+          const aiReply = response.data.choices?.[0]?.message?.content?.trim() || "No reply returned.";
 
-    // Store the new Q&A in conversation history
-    const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
+          // Store the new Q&A in conversation history
+          const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
 
-    // Update context in Supabase
-    const { error: updateError } = await this.supabase
-      .from('student_ai_context')
-      .update({ conversation_history: updatedHistory })
-      .eq('student_id', studentId);
+          // Update context in Supabase
+          const { error: updateError } = await this.supabase
+            .from('student_ai_context')
+            .update({ conversation_history: updatedHistory })
+            .eq('student_id', studentId);
 
-    if (updateError) throw updateError;
+          if (updateError) throw updateError;
 
-    return aiReply;
+          return aiReply;
+        } catch (err: any) {
+          if (err.response) {
+            console.error("Azure OpenAI error response:", err.response.data);
+            return `Error from Azure OpenAI: ${JSON.stringify(err.response.data)}`;
+          } else {
+            console.error("Error processing image in studyBuddyChat:", err);
+            return "Sorry, I couldn't process the image. Please make sure the image is valid and try again.";
+          }
+        }
+      } catch (err) {
+        console.error("Error processing image in studyBuddyChat (outer catch):", err);
+        return "Sorry, I couldn't process the image. Please make sure the image is valid and try again.";
+      }
+    } else {
+      // Text-only fallback
+      const prompt = [
+        systemPrompt,
+        "Here is the conversation so far:",
+        ...history,
+        `Q: ${message}`,
+        "A:"
+      ].join('\n');
+
+      // Call Azure OpenAI
+      const aiReply = await this.callAzureOpenAI(prompt);
+
+      // Store the new Q&A in conversation history
+      const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
+
+      // Update context in Supabase
+      const { error: updateError } = await this.supabase
+        .from('student_ai_context')
+        .update({ conversation_history: updatedHistory })
+        .eq('student_id', studentId);
+
+      if (updateError) throw updateError;
+
+      return aiReply;
+    }
   }
 
   // Flashcard Generator
@@ -208,11 +274,17 @@ export class AIService {
     const base64Image = image.buffer.toString('base64');
     // Prepare payload for vision model (e.g., Azure OpenAI, OpenAI GPT-4 Vision)
     // Use only the credentials and endpoint as defined in .env (do not change or add fallbacks)
-    const endpoint = process.env.AZURE_API_BASE;
+    const base = process.env.AZURE_API_BASE;
+    const deployment = process.env.AZURE_API_MODEL;
+    const apiVersion = process.env.AZURE_API_VERSION;
     const apiKey = process.env.AZURE_API_KEY;
-    if (!endpoint || !apiKey) {
-      throw new Error("Azure OpenAI API endpoint or API key is not set in environment variables.");
+    
+    if (!base || !deployment || !apiVersion || !apiKey) {
+      throw new Error("Azure OpenAI API configuration is incomplete in environment variables.");
     }
+    
+    // Construct the proper endpoint like in callAzureOpenAI
+    const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
     // Use user prompt or fallback to default
     const userPrompt = prompt && prompt.trim().length > 0
       ? prompt.trim()
@@ -234,7 +306,7 @@ export class AIService {
     };
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
+      "api-key": apiKey
     };
     // Send request to vision model
     const response = await axios.post(endpoint, payload, { headers });
@@ -244,8 +316,12 @@ export class AIService {
 
   // Helper: Call Azure OpenAI API
   private async callAzureOpenAI(prompt: string): Promise<string> {
-    const endpoint = process.env.AZURE_API_BASE!;
+    const base = process.env.AZURE_API_BASE!;
+    const deployment = process.env.AZURE_API_MODEL!;
+    const apiVersion = process.env.AZURE_API_VERSION!;
     const apiKey = process.env.AZURE_API_KEY!;
+
+    const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
     const response = await axios.post(
       endpoint,
