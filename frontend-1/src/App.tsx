@@ -18,6 +18,7 @@ import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 import TaskScheduler from './pages/Student/TaskScheduler';
 
 import MyNotes from './pages/Student/MyNotes';
+import NotesApp from './pages/Student/Notes';
 import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
 
 interface RequireAuthProps {
@@ -153,8 +154,8 @@ function App() {
           <Route path="chatbot" element={<StudyBuddy />} />
           <Route path="flashcards" element={<FlashcardGenerator />} />
           <Route path="task-scheduler" element={<TaskScheduler />} />
-
-<Route path="mynotes" element={<MyNotesWithBuddy />} />
+          <Route path="notes" element={<NotesApp />} />
+  <Route path="mynotes" element={<MyNotesWithBuddy />} />       
         </Route>
       </Routes>
     </Router>
