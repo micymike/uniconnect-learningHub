@@ -8,6 +8,7 @@ const navItems = [
   { label: "Settings", path: "settings", icon: "bx bx-cog" },
   { label: "Help", path: "help", icon: "bx bx-help-circle" },
   { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
+  { label: "Notes", path: "notes", icon: "bx bx-notepad" },
 ];
 
 const aiTools = [
