@@ -198,30 +198,30 @@ const StudyBuddy: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 animate-fade-in-up">
-        <div className="flex items-center justify-between mx-auto">
-          <div className="flex items-center space-x-4">
-            <div className="bg-orange-500 bg-opacity-20 p-3 rounded-xl">
-              <i className="bx bx-message-dots text-2xl text-orange-500"></i>
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 sm:px-6 sm:py-4 animate-fade-in-up">
+        <div className="flex items-center justify-between mx-auto w-full">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="bg-orange-500 bg-opacity-20 p-2 sm:p-3 rounded-xl">
+              <i className="bx bx-message-dots text-xl sm:text-2xl text-orange-500"></i>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Study Buddy</h1>
-              <p className="text-gray-400 text-sm">Your AI learning companion</p>
+              <h1 className="text-lg sm:text-2xl font-bold text-white">Study Buddy</h1>
+              <p className="text-gray-400 text-xs sm:text-sm">Your AI learning companion</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-green-400 text-sm font-medium">Online</span>
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-green-400 text-xs sm:text-sm font-medium">Online</span>
           </div>
         </div>
       </div>
 
       {/* Chat Container */}
-      <div className="flex-1 flex justify-center px-4 py-6">
+      <div className="flex-1 flex flex-col justify-center px-2 py-2 sm:px-4 sm:py-6">
         <div className="w-full h-full bg-gray-800 flex flex-col flex-1 min-h-screen animate-fade-in-up animation-delay-300 relative">
           
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6" style={{ paddingBottom: "104px" }}>
+          <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6" style={{ paddingBottom: "104px" }}>
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -287,23 +287,15 @@ const StudyBuddy: React.FC = () => {
           {/* Quick Prompts */}
           {messages.length === 1 && (
             <div
-              className="px-6 py-4 border-t border-gray-700"
-              style={{
-                position: "fixed",
-                bottom: "104px",
-                left: "288px",
-                width: "calc(100% - 288px)",
-                zIndex: 10,
-                background: "#1f2937"
-              }}
+              className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 w-full bg-gray-800 sm:sticky sm:bottom-[104px] sm:left-0 sm:w-auto sm:bg-transparent z-10"
             >
-              <p className="text-gray-400 text-sm mb-3">Quick prompts to get started:</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">Quick prompts to get started:</p>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {quickPrompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => setInput(prompt)}
-                    className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors border border-gray-600 hover:border-orange-500"
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs sm:text-sm rounded-lg transition-colors border border-gray-600 hover:border-orange-500"
                   >
                     {prompt}
                   </button>
@@ -315,19 +307,11 @@ const StudyBuddy: React.FC = () => {
         </div>
         {/* Input Area */}
         <div
-          className="px-6 py-4 border-t border-gray-700"
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: "288px",
-            width: "calc(100% - 288px)",
-            zIndex: 20,
-            background: "#1f2937"
-          }}
+          className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 w-full bg-gray-800 sm:sticky sm:bottom-0 sm:left-0 z-20"
         >
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row items-center sm:space-x-3 space-y-2 sm:space-y-0">
             {imagePreview && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 mb-2 sm:mb-0">
                 <img
                   src={imagePreview}
                   alt="Preview"
@@ -343,11 +327,11 @@ const StudyBuddy: React.FC = () => {
                 </button>
               </div>
             )}
-            <div className="flex-1 relative flex items-center">
+            <div className="flex-1 relative flex items-center w-full">
               <input
                 ref={inputRef}
                 type="text"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-opacity-20 transition-all duration-300"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-opacity-20 transition-all duration-300 text-sm sm:text-base"
                 placeholder="Ask me anything about your studies... (or what to do with your image)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -372,8 +356,8 @@ const StudyBuddy: React.FC = () => {
               onChange={handleImageChange}
               disabled={loading}
             />
-            <label htmlFor="image-upload" className="cursor-pointer">
-              <span className="px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white hover:bg-gray-600 transition-colors flex items-center space-x-2">
+            <label htmlFor="image-upload" className="cursor-pointer mt-2 sm:mt-0">
+              <span className="px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-xl text-white hover:bg-gray-600 transition-colors flex items-center space-x-1 sm:space-x-2 text-xs sm:text-base">
                 <i className="bx bx-image text-lg"></i>
                 <span>Upload Photo</span>
               </span>
@@ -381,7 +365,7 @@ const StudyBuddy: React.FC = () => {
             <button
               onClick={sendMessage}
               disabled={loading || (!input.trim() && !imageFile)}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+              className={`mt-2 sm:mt-0 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-base ${
                 loading || (!input.trim() && !imageFile)
                   ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg transform hover:scale-105"

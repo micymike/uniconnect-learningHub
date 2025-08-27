@@ -377,7 +377,7 @@ setStudyMates(
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col lg:flex-row">
       {toast && (
         <Toast
           type={toast.type}
@@ -386,7 +386,7 @@ setStudyMates(
         />
       )}
       {/* Sidebar */}
-      <div className={`${selectedMate ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 bg-gray-800 border-r border-gray-700 flex-col`}>
+      <div className={`${selectedMate ? 'hidden lg:flex' : 'flex'} w-full max-w-full lg:max-w-xs lg:w-80 bg-gray-800 border-r border-gray-700 flex-col`}>
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -490,7 +490,7 @@ setStudyMates(
       </div>
 
       {/* Chat Area */}
-      <div className={`${selectedMate ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-screen`}>
+      <div className={`${selectedMate ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-screen`}>
         {selectedMate ? (
           <>
             {/* Chat Header */}
@@ -543,7 +543,7 @@ setStudyMates(
                       key={message.id}
                       className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      <div className={`w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
                         message.senderId === user?.id
                           ? 'bg-orange-500 text-white'
                           : 'bg-gray-700 text-white'
