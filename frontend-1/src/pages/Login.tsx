@@ -69,8 +69,9 @@ export default function Login() {
         const accessToken = data.session?.access_token || data.access_token;
         const refreshToken = data.session?.refresh_token || data.refresh_token;
         const userRole = data.profile?.role || 
-                         data.user?.user_metadata?.role || 
-                         "student";
+                 (data.user && data.user.role) || 
+                 (data.user && data.user.user_metadata && data.user.user_metadata.role) || 
+                 "student";
 
         if (!accessToken || !refreshToken) {
           throw new Error("Authentication tokens missing");

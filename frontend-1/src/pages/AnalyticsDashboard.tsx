@@ -18,6 +18,16 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Check if user is admin before making the request
+    const userRole = localStorage.getItem("userRole");
+    console.log("User role from localStorage:", userRole);
+    
+    if (userRole !== "admin") {
+      setError("Access denied. Admin privileges required.");
+      setLoading(false);
+      return;
+    }
+
     const token = localStorage.getItem("token");
     setLoading(true);
     setError("");
@@ -25,11 +35,18 @@ export default function AnalyticsDashboard() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error((await res.json()).message || "Error");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error("API Error:", res.status, errorData);
+          throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+        }
         return res.json();
       })
       .then((data) => setSummary(data))
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError(err.message)
+      })
       .finally(() => setLoading(false));
   }, []);
 
