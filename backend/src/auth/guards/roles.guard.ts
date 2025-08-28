@@ -1,23 +1,31 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../roles.decorator';
 import { UserRole } from '../../users/interfaces/user.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    @Inject('SUPABASE_CLIENT') private supabase: SupabaseClient
+    @Inject('SUPABASE_CLIENT') private supabase: SupabaseClient,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
+  
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -25,10 +33,14 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Verify user and role
-    if (!user?.sub) {
-      throw new ForbiddenException('Invalid user');
+    if (!user) {
+      throw new UnauthorizedException('No user found in request. Is JwtAuthGuard applied?');
     }
+
+    if (!user.sub) {
+      throw new ForbiddenException('Invalid user payload (missing sub).');
+    }
+
 
     const { data: dbUser, error } = await this.supabase
       .from('user_profiles')
@@ -36,15 +48,23 @@ export class RolesGuard implements CanActivate {
       .eq('id', user.sub)
       .single();
 
-    if (error || !dbUser) {
-      throw new ForbiddenException('User not found');
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new ForbiddenException('Error fetching user from database.');
     }
 
-    if (!requiredRoles.includes(dbUser.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+    if (!dbUser) {
+      throw new ForbiddenException('User not found in database.');
     }
+
+  
+    if (!requiredRoles.includes(dbUser.role)) {
+      throw new ForbiddenException('Insufficient permissions.');
+    }
+
 
     request.user.role = dbUser.role;
+
     return true;
   }
 }
