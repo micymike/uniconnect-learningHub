@@ -117,4 +117,36 @@ export class NotesService {
       throw new InternalServerErrorException(`Failed to fetch notes from Supabase: ${err?.message || err}`);
     }
   }
+
+  async saveFlashcardScore(
+    userId: string,
+    score: number,
+    bonus: number,
+    numQuestions: number,
+    timestamp: string
+  ) {
+    try {
+      const { data, error } = await this.supabase
+        .from('flashcard_scores')
+        .insert([
+          {
+            user_id: userId,
+            score,
+            bonus,
+            num_questions: numQuestions,
+            timestamp,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        throw new InternalServerErrorException('Failed to save flashcard score to Supabase');
+      }
+
+      return { success: true, id: data?.id };
+    } catch (err) {
+      throw new InternalServerErrorException("Failed to save flashcard score");
+    }
+  }
 }

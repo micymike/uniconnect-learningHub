@@ -62,6 +62,19 @@ export class AIController {
     return { explanation };
   }
 
+  // Flashcard AI Answer Check
+  @UseGuards(JwtAuthGuard)
+  @Post('check-flashcard-answer')
+  async checkFlashcardAnswer(
+    @Req() req,
+    @Body('question') question: string,
+    @Body('answer') answer: string,
+    @Body('userAnswer') userAnswer: string,
+  ): Promise<{ correct: boolean, feedback?: string }> {
+    const userId = req.user.userId;
+    return await this.aiService.checkFlashcardAnswer(userId, question, answer, userAnswer);
+  }
+
   // Study Assistant: Ask about uploaded document
   @UseGuards(JwtAuthGuard)
   @Post('study-assist')
