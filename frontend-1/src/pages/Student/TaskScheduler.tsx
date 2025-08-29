@@ -321,17 +321,17 @@ const TaskScheduler: React.FC = () => {
                       {selectedSchedule.tasks?.length || 0} tasks • {Math.floor((selectedSchedule.totalDuration || 0) / 60)}h {(selectedSchedule.totalDuration || 0) % 60}m total
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col xs:flex-row gap-2 w-full max-w-xs sm:max-w-none sm:flex-row sm:items-center sm:justify-end">
                     <button
                       onClick={saveSchedule}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 w-full sm:w-auto"
                     >
                       <CheckCircle className="h-4 w-4" />
                       Save
                     </button>
                     <button
                       onClick={() => downloadSchedule(selectedSchedule.id, selectedSchedule.title)}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 w-full sm:w-auto"
                     >
                       <Download className="h-4 w-4" />
                       Download
