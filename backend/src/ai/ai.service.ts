@@ -261,6 +261,35 @@ export class AIService {
     return explanation;
   }
 
+  // AI checks if user's answer is correct for a flashcard
+  async checkFlashcardAnswer(
+    userId: string,
+    question: string,
+    answer: string,
+    userAnswer: string
+  ): Promise<{ correct: boolean, feedback?: string }> {
+    const prompt = [
+      "You are an AI tutor. Given a flashcard question, the correct answer, and a student's answer, judge if the student's answer is correct.",
+      "If the answer is correct, reply with 'CORRECT'. If not, reply with 'INCORRECT' and a brief feedback message for the student.",
+      `Question: ${question}`,
+      `Correct Answer: ${answer}`,
+      `Student's Answer: ${userAnswer}`,
+      "Result:"
+    ].join("\n");
+
+    const aiResponse = await this.callAzureOpenAI(prompt);
+    if (aiResponse.trim().toUpperCase().startsWith("CORRECT")) {
+      return { correct: true };
+    } else if (aiResponse.trim().toUpperCase().startsWith("INCORRECT")) {
+      // Extract feedback after "INCORRECT"
+      const feedback = aiResponse.replace(/INCORRECT[:\-]?\s*/i, "").trim();
+      return { correct: false, feedback };
+    } else {
+      // Fallback: treat as incorrect with generic feedback
+      return { correct: false, feedback: aiResponse.trim() };
+    }
+  }
+
   // Analyze Image (Vision Model)
   async analyzeImage(
     userId: string,
