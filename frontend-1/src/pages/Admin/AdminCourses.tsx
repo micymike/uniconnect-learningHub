@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = import.meta.env.VITE_API_URL;
 type Course = {
-  id?: string;  // Changed from _id to id to match backend
+  id?: string; 
   title: string;
   description: string;
   created_at?: string;
@@ -81,7 +81,7 @@ export default function AdminCourses() {
   useEffect(() => {
     if (!token) {
       setToast({ message: "Please log in to access this page", type: "error" });
-      navigate("/login"); // Adjust the login route as needed
+      navigate("/login"); 
       return;
     }
   }, [token, navigate]);
@@ -137,7 +137,7 @@ export default function AdminCourses() {
 
   useEffect(() => {
     fetchCourses();
-    // eslint-disable-next-line
+    
   }, []);
 
   useEffect(() => {
@@ -154,9 +154,9 @@ export default function AdminCourses() {
     setModalMode(mode);
     setShowModal(true);
     if (mode === "edit" && course) {
-      console.log("Editing course:", course); // Debug log
+      console.log("Editing course:", course)
       setForm({ title: course.title, description: course.description });
-      setEditingId(course.id || null);  // Changed from course._id to course.id
+      setEditingId(course.id || null);  
     } else {
       setForm({ title: "", description: "" });
       setEditingId(null);

@@ -47,7 +47,7 @@ const QuizzesPage = () => {
 
   // Check authentication and get user on component mount
   useEffect(() => {
-    const accessToken = localStorage.getItem('access_token');
+    const accessToken = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
     if (!accessToken || !userData) {
@@ -76,7 +76,7 @@ const QuizzesPage = () => {
       setLoading(true);
       setError('');
       
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('token');
       if (!accessToken) {
         navigate('/login');
         return;
@@ -111,7 +111,7 @@ const QuizzesPage = () => {
       setLoading(true);
       setError('');
       
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('token');
       if (!accessToken) {
         navigate('/login');
         return;
@@ -145,7 +145,7 @@ const QuizzesPage = () => {
     try {
       setError('');
       
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('token');
       if (!accessToken) {
         navigate('/login');
         return;
@@ -189,7 +189,7 @@ const QuizzesPage = () => {
     try {
       setError('');
       
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('token');
       if (!accessToken) {
         navigate('/login');
         return;
@@ -231,7 +231,7 @@ const QuizzesPage = () => {
     try {
       setError('');
       
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = localStorage.getItem('token');
       if (!accessToken) {
         navigate('/login');
         return;
