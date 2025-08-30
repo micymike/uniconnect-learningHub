@@ -17,7 +17,7 @@ import StudyBuddy from './pages/Student/StudyBuddy';
 import StudyChat from './pages/Student/StudyChat';
 import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 import TaskScheduler from './pages/Student/TaskScheduler';
-
+import MatchingGame from './pages/Student/MatchingGame';
 import MyNotes from './pages/Student/MyNotes';
 import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
 import Feedback from './pages/Feedback';
@@ -165,6 +165,7 @@ function App() {
           <Route path="courses" element={<Courses />} />
           <Route path="courses/:id" element={<CourseDetails />} />
           <Route path="help" element={<div>Help Page</div>} />
+          <Route path="matching-game" element={<MatchingGame />} />
           <Route path="feedback" element={<Feedback />} />
           <Route path="chatbot" element={<StudyBuddy />} />
           <Route path="study-chat" element={<StudyChat />} />

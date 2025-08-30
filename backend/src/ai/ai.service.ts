@@ -343,6 +343,37 @@ export class AIService {
     return explanation;
   }
 
+  // Matching Game: Extract pairs for matching game
+  async getMatchingPairs(
+    userId: string,
+    text: string,
+    numPairs: number
+  ): Promise<{ pairs: { term: string; definition: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI that generates matching pairs for a study game. Given the following material, extract " +
+        numPairs +
+        " pairs of related terms and definitions (or Q/A). Respond ONLY with a valid JSON array: [{\"term\": \"\", \"definition\": \"\"}, ...] and nothing else.",
+      "Material:",
+      text,
+    ].join("\n");
+
+    let pairs: { term: string; definition: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      // Try to parse JSON from response
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        pairs = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate matching pairs: " + (err as Error).message);
+    }
+    return { pairs };
+  }
+
   // Helper: Call Azure OpenAI API
   private async callAzureOpenAI(prompt: string): Promise<string> {
     const base = process.env.AZURE_API_BASE!;
