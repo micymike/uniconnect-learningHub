@@ -75,6 +75,18 @@ export class AIController {
     return await this.aiService.checkFlashcardAnswer(userId, question, answer, userAnswer);
   }
 
+  // Matching Game Pairs
+  @UseGuards(JwtAuthGuard)
+  @Post('matching-pairs')
+  async getMatchingPairs(
+    @Req() req,
+    @Body('text') text: string,
+    @Body('numPairs') numPairs: number = 8,
+  ): Promise<{ pairs: { term: string; definition: string }[] }> {
+    const userId = req.user.userId;
+    return await this.aiService.getMatchingPairs(userId, text, numPairs);
+  }
+
   // Study Assistant: Ask about uploaded document
   @UseGuards(JwtAuthGuard)
   @Post('study-assist')
