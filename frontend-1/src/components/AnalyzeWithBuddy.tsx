@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import "boxicons/css/boxicons.min.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api";
+
 type Note = {
   id: string;
   name: string;
@@ -61,7 +63,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
       formData.append("file", uploadFile);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${API_URL}/ai/study-assist`, {
           method: "POST",
           headers: token
             ? { Authorization: `Bearer ${token}` }
@@ -82,7 +84,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
     } else {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${API_URL}/ai/study-assist`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -171,7 +173,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/upload`, {
+      const response = await fetch(`${API_URL}/notes/upload`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,

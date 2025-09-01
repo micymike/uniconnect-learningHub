@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {ToastContainer , toast } from 'react-toastify';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com") + "/api";
 
 interface Lesson {
   id: string;
