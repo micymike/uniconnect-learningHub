@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 import "boxicons/css/boxicons.min.css";
-// import { formatAIResponse } from "../../utils/formatAIResponse";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
 const MAX_MESSAGES = 50; // Limit message history
@@ -25,9 +25,55 @@ const StudyBuddy: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [context, setContext] = useState<any>({});
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch context (notes, quiz results, learning path) on mount
+  useEffect(() => {
+    const fetchContext = async () => {
+      const token = localStorage.getItem("token") || "";
+      try {
+        // Fetch notes
+        const notesRes = await fetch(`${API_BASE}/notes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const notesData = await notesRes.json();
+        const notes = (notesData.notes || []).map((n: any) => n.content || n.text || n.name || "").filter(Boolean);
+
+        // Fetch quiz results (mocked for now)
+        const quizResults: any[] = [];
+
+        // Fetch learning path
+        const lpRes = await fetch(`${API_BASE}/ai/learning-path`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            performanceData: {
+              quizResults: [],
+              notes: [],
+              completedLessons: [],
+            },
+          }),
+        });
+        const lpData = await lpRes.json();
+        const learningPath = lpData.learningPath || [];
+
+        setContext({
+          notes,
+          quizResults,
+          learningPath,
+        });
+      } catch (err) {
+        setContext({});
+      }
+    };
+    fetchContext();
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,6 +130,7 @@ const StudyBuddy: React.FC = () => {
         const formData = new FormData();
         formData.append("image", imageFile);
         formData.append("message", input.trim());
+        formData.append("context", JSON.stringify(context));
 
         res = await fetch(`${API_BASE}/ai/chat`, {
           method: "POST",
@@ -94,14 +141,14 @@ const StudyBuddy: React.FC = () => {
         });
         data = await res.json();
       } else {
-        // Send text only
+        // Send text and context as JSON
         res = await fetch(`${API_BASE}/ai/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token || ""}`,
           },
-          body: JSON.stringify({ message: input.trim() }),
+          body: JSON.stringify({ message: input.trim(), context }),
         });
         data = await res.json();
       }
@@ -196,9 +243,9 @@ const StudyBuddy: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 sm:px-6 sm:py-4 animate-fade-in-up">
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 sm:px-6 sm:py-4 animate-fade-in-up flex-shrink-0">
         <div className="flex items-center justify-between mx-auto w-full">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <div className="bg-orange-500 bg-opacity-20 p-2 sm:p-3 rounded-xl">
@@ -216,12 +263,8 @@ const StudyBuddy: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat Container */}
-      <div className="flex-1 flex flex-col justify-center px-2 py-2 sm:px-4 sm:py-6">
-        <div className="w-full h-full bg-gray-800 flex flex-col flex-1 min-h-screen animate-fade-in-up animation-delay-300 relative">
-          
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6" style={{ paddingBottom: "104px" }}>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6 bg-gray-800">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -253,10 +296,29 @@ const StudyBuddy: React.FC = () => {
                     {msg.imageUrl && (
                       <img src={msg.imageUrl} alt="Uploaded" className="mb-2 rounded-lg max-w-xs" />
                     )}
-                    {msg.sender === "ai"
-  ? <p className="text-sm leading-relaxed whitespace-pre-line">{msg.text}</p>
-  : <p className="text-sm leading-relaxed">{msg.text}</p>
-}
+                    {msg.sender === "ai" ? (
+                      <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
+                        <ReactMarkdown
+                          components={{
+                            p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                            ul: ({children}) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                            ol: ({children}) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                            li: ({children}) => <li className="mb-1">{children}</li>,
+                            code: ({children}) => <code className="bg-gray-600 px-1 py-0.5 rounded text-xs">{children}</code>,
+                            pre: ({children}) => <pre className="bg-gray-600 p-2 rounded mt-2 overflow-x-auto text-xs">{children}</pre>,
+                            strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                            em: ({children}) => <em className="italic">{children}</em>,
+                            h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                            h3: ({children}) => <h3 className="text-sm font-bold mb-1">{children}</h3>
+                          }}
+                        >
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                    )}
                   </div>
                   <span className="text-xs text-gray-500 mt-1 px-2">
                     {formatTime(msg.timestamp)}
@@ -281,34 +343,29 @@ const StudyBuddy: React.FC = () => {
               </div>
             )}
             
-            <div ref={chatEndRef} />
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Quick Prompts */}
+      {messages.length === 1 && (
+        <div className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 bg-gray-800 flex-shrink-0">
+          <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">Quick prompts to get started:</p>
+          <div className="flex flex-wrap gap-1 sm:gap-2">
+            {quickPrompts.map((prompt, idx) => (
+              <button
+                key={idx}
+                onClick={() => setInput(prompt)}
+                className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs sm:text-sm rounded-lg transition-colors border border-gray-600 hover:border-orange-500"
+              >
+                {prompt}
+              </button>
+            ))}
           </div>
-
-          {/* Quick Prompts */}
-          {messages.length === 1 && (
-            <div
-              className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 w-full bg-gray-800 sm:sticky sm:bottom-[104px] sm:left-0 sm:w-auto sm:bg-transparent z-10"
-            >
-              <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">Quick prompts to get started:</p>
-              <div className="flex flex-wrap gap-1 sm:gap-2">
-                {quickPrompts.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setInput(prompt)}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs sm:text-sm rounded-lg transition-colors border border-gray-600 hover:border-orange-500"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
         </div>
-        {/* Input Area */}
-        <div
-          className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 w-full bg-gray-800 sm:sticky sm:bottom-0 sm:left-0 z-20"
-        >
+      )}
+
+      {/* Input Area */}
+      <div className="px-2 py-3 sm:px-6 sm:py-4 border-t border-gray-700 bg-gray-800 flex-shrink-0">
           <div className="flex flex-col sm:flex-row items-center sm:space-x-3 space-y-2 sm:space-y-0">
             {imagePreview && (
               <div className="flex items-center space-x-1 mb-2 sm:mb-0">
@@ -385,10 +442,9 @@ const StudyBuddy: React.FC = () => {
             </button>
           </div>
           {/* Image preview is now inside the input area */}
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Press Enter to send • You can upload or paste a photo and type what you want Study Buddy to do with it
-          </p>
-        </div>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          Press Enter to send • You can upload or paste a photo and type what you want Study Buddy to do with it
+        </p>
       </div>
     </div>
   );
