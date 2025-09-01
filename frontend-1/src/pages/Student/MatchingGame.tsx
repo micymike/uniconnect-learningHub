@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // Type for a matching pair
 type Pair = {
@@ -55,28 +55,37 @@ const MatchingGame: React.FC = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Upload state
+  const [file, setFile] = useState<File | null>(null);
+  const [noteName, setNoteName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Fetch notes on mount
+  const fetchNotes = async () => {
+    setLoadingNotes(true);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(`${api_url}/notes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch notes");
+      const data = await res.json();
+      const notes = (data.notes || []).map((n: any) => ({
+        ...n,
+        uploadedAt: n.uploaded_at,
+      }));
+      setNotes(notes);
+    } catch (err: any) {
+      setError(err.message || "Failed to load notes");
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotes = async () => {
-      setLoadingNotes(true);
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`${api_url}/notes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch notes");
-        const data = await res.json();
-        const notes = (data.notes || []).map((n: any) => ({
-          ...n,
-          uploadedAt: n.uploaded_at,
-        }));
-        setNotes(notes);
-      } catch (err: any) {
-        setError(err.message || "Failed to load notes");
-      } finally {
-        setLoadingNotes(false);
-      }
-    };
     fetchNotes();
   }, []);
 
@@ -219,12 +228,109 @@ const MatchingGame: React.FC = () => {
     setRightCards(shuffle(rightCards.map((c) => ({ ...c, matched: false, selected: false }))));
   };
 
+  // Upload logic (from MyNotes)
+  const handleUpload = async () => {
+    setUploadError("");
+    setUploadSuccess("");
+    if (!file) {
+      setUploadError("Please select a file.");
+      return;
+    }
+    if (!noteName.trim()) {
+      setUploadError("Please enter a note name.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setUploadError("File size must be less than 3MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+      formData.append("name", noteName.trim());
+      formData.append("contentType", file.type || "application/octet-stream");
+      formData.append("file_type", file.name.split('.').pop()?.toLowerCase() || "");
+
+      const res = await fetch(`${api_url}/notes/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Upload failed");
+      }
+
+      setUploadSuccess("Note uploaded successfully!");
+      setNoteName("");
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      await fetchNotes();
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 flex flex-col items-center py-8 px-2">
-      <h1 className="text-3xl font-bold text-indigo-700 mb-4 text-center">Matching Game</h1>
-      <p className="mb-4 text-gray-700 text-center">
+      <h1 className="text-3xl font-bold text-indigo-700 mb-2 text-center">Matching Game</h1>
+      <p className="mb-2 text-gray-700 text-center">
         Select a note to play! Match questions (left) to answers (right). Fewer moves = higher score.
       </p>
+      {/* New message about PDF notes */}
+      <div className="mb-4 text-center text-indigo-900 font-medium">
+        The games are generated from the PDF notes you upload below. Upload your notes to create new games!
+      </div>
+      {/* Upload Section */}
+      <div className="w-full max-w-md mb-8 bg-white/80 rounded-xl shadow p-6 flex flex-col items-center">
+        <h2 className="text-lg font-bold text-indigo-700 mb-4">Upload Note</h2>
+        <input
+          type="text"
+          placeholder="Enter note name..."
+          value={noteName}
+          onChange={(e) => setNoteName(e.target.value)}
+          className="w-full px-4 py-2 mb-3 border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          disabled={uploading}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,.md"
+          className="w-full mb-3"
+          onChange={(e) => {
+            const selectedFile = e.target.files?.[0] || null;
+            setFile(selectedFile);
+            if (selectedFile && !noteName) {
+              setNoteName(selectedFile.name.split('.')[0]);
+            }
+          }}
+          disabled={uploading}
+        />
+        <button
+          onClick={handleUpload}
+          disabled={uploading || !file || !noteName.trim()}
+          className={`w-full py-2 rounded-lg font-semibold transition-all duration-300 ${
+            uploading || !file || !noteName.trim()
+              ? "bg-indigo-200 text-indigo-400 cursor-not-allowed"
+              : "bg-indigo-600 text-white hover:bg-indigo-700"
+          }`}
+        >
+          {uploading ? "Uploading..." : "Upload Note"}
+        </button>
+        {uploadError && (
+          <div className="mt-3 text-red-600 text-sm">{uploadError}</div>
+        )}
+        {uploadSuccess && (
+          <div className="mt-3 text-green-600 text-sm">{uploadSuccess}</div>
+        )}
+      </div>
       {error && <div className="mb-4 text-red-600 font-semibold">{error}</div>}
       {/* Note selection */}
       <div className="mb-6 w-full max-w-2xl">
