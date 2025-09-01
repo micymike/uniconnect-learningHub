@@ -21,6 +21,28 @@ export class AIController {
     return { explanation };
   }
 
+  // Dynamic Learning Path
+  @UseGuards(JwtAuthGuard)
+  @Post('learning-path')
+  async generateLearningPath(
+    @Req() req,
+    @Body('performanceData') performanceData: any,
+  ): Promise<{ learningPath: { id: string; title: string; description: string }[] }> {
+    const userId = req.user.userId;
+    return await this.aiService.generateLearningPath(userId, performanceData);
+  }
+  // Smart Quiz Generator
+  @UseGuards(JwtAuthGuard)
+  @Post('generate-quiz')
+  async generateSmartQuiz(
+    @Req() req,
+    @Body() body: any,
+  ): Promise<{ quiz: { question: string; options: string[]; answer: string; explanation?: string }[] }> {
+    const userId = req.user.userId;
+    const { notes, quizHistory, numQuestions = 5 } = body;
+    return await this.aiService.generateSmartQuiz(userId, notes, quizHistory, numQuestions);
+  }
+
   // Study Buddy Chatbot
   @UseGuards(JwtAuthGuard)
   @Post('chat')
@@ -28,10 +50,11 @@ export class AIController {
   async studyBuddyChat(
     @Req() req,
     @Body('message') message: string,
+    @Body('context') context: any,
     @UploadedFile() image: Express.Multer.File,
   ): Promise<{ reply: string }> {
     const userId = req.user.userId;
-    const reply = await this.aiService.studyBuddyChat(userId, message, image);
+    const reply = await this.aiService.studyBuddyChat(userId, message, image, context);
     return { reply };
   }
 

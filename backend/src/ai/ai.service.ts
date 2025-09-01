@@ -15,10 +15,11 @@ export class AIService {
   async studyBuddyChat(
     studentId: string,
     message: string,
-    image?: Express.Multer.File
+    image?: Express.Multer.File,
+    context?: any
   ): Promise<string> {
     // Retrieve or create student context
-    let { data: context, error } = await this.supabase
+    let { data: dbContext, error } = await this.supabase
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
@@ -28,7 +29,7 @@ export class AIService {
       throw error;
     }
 
-    if (!context) {
+    if (!dbContext) {
       // Create new context
       const { data: newContext, error: insertError } = await this.supabase
         .from('student_ai_context')
@@ -41,12 +42,26 @@ export class AIService {
         .select('*')
         .maybeSingle();
       if (insertError) throw insertError;
-      context = newContext;
+      dbContext = newContext;
     }
 
     // Prepare conversation history for context (limit to last 20 exchanges)
-    const history = context.conversation_history || [];
-    const systemPrompt = "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.";
+    const history = dbContext.conversation_history || [];
+    // Build a context-aware system prompt
+    let systemPrompt = "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.";
+    // Add proactive context if provided
+    if (context && typeof context === "object") {
+      if (context.notes && Array.isArray(context.notes) && context.notes.length > 0) {
+        systemPrompt += `\nThe student has the following recent notes: ${context.notes.join(" | ")}.`;
+      }
+      if (context.quizResults && Array.isArray(context.quizResults) && context.quizResults.length > 0) {
+        systemPrompt += `\nRecent quiz results: ${JSON.stringify(context.quizResults)}.`;
+      }
+      if (context.learningPath && Array.isArray(context.learningPath) && context.learningPath.length > 0) {
+        systemPrompt += `\nTheir current learning path: ${context.learningPath.map((lp: any) => lp.title).join(", ")}.`;
+      }
+      systemPrompt += "\nIf you notice weak areas, proactively suggest review, quizzes, or flashcards. If the student is making progress, offer encouragement and next steps.";
+    }
 
     // If image is provided, use vision model payload
     if (image && image.buffer) {
@@ -372,6 +387,73 @@ export class AIService {
       throw new Error("Failed to generate matching pairs: " + (err as Error).message);
     }
     return { pairs };
+  }
+
+  // Dynamic Learning Path Generator
+  async generateLearningPath(
+    userId: string,
+    performanceData: {
+      quizResults: any[];
+      notes: string[];
+      completedLessons: string[];
+    }
+  ): Promise<{ learningPath: { id: string; title: string; description: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI educational advisor. Given the following student data, recommend a personalized learning path for maximum retention and improvement.",
+      "Student Data:",
+      `Quiz Results: ${JSON.stringify(performanceData.quizResults)}`,
+      `Notes: ${performanceData.notes.join('\n')}`,
+      `Completed Lessons: ${JSON.stringify(performanceData.completedLessons)}`,
+      "Respond ONLY with a valid JSON array: [{\"id\": \"lesson_or_topic_id\", \"title\": \"Lesson/Topic Title\", \"description\": \"Why this is recommended\"}, ...] and nothing else.",
+    ].join("\n");
+
+    let learningPath: { id: string; title: string; description: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        learningPath = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate learning path: " + (err as Error).message);
+    }
+    return { learningPath };
+  }
+
+  // Smart Quiz Generator
+  async generateSmartQuiz(
+    userId: string,
+    notes: string[],
+    quizHistory: any[],
+    numQuestions: number = 5
+  ): Promise<{ quiz: { question: string; options: string[]; answer: string; explanation?: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI quiz generator. Given the student's notes and quiz history, generate a quiz targeting their weak areas.",
+      "Student Notes:",
+      notes.join('\n'),
+      "Quiz History:",
+      JSON.stringify(quizHistory),
+      `Generate ${numQuestions} multiple-choice questions. Each question should have 4 options, the correct answer, and a brief explanation.`,
+      "Respond ONLY with a valid JSON array: [{\"question\": \"\", \"options\": [\"\", \"\", \"\", \"\"], \"answer\": \"\", \"explanation\": \"\"}, ...] and nothing else."
+    ].join("\n");
+
+    let quiz: { question: string; options: string[]; answer: string; explanation?: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        quiz = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate smart quiz: " + (err as Error).message);
+    }
+    return { quiz };
   }
 
   // Helper: Call Azure OpenAI API
