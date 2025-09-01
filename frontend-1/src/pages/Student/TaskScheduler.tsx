@@ -41,7 +41,7 @@ const TaskScheduler: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api"}/task-scheduler/schedules?userId=${userId}`);
+const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api"}/task-scheduler/schedules?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setSchedules(Array.isArray(data) ? data : []);
@@ -59,7 +59,7 @@ const TaskScheduler: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api"}/task-scheduler/create?userId=${userId}`, {
+const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api"}/task-scheduler/create?userId=${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userInput, preferences })
@@ -83,7 +83,7 @@ const TaskScheduler: React.FC = () => {
 
   const deleteSchedule = async (scheduleId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com"}/task-scheduler/schedules/${scheduleId}?userId=${userId}`, {
+const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com"}/task-scheduler/schedules/${scheduleId}?userId=${userId}`, {
         method: 'DELETE'
       });
       
@@ -118,7 +118,7 @@ const TaskScheduler: React.FC = () => {
     if (!selectedSchedule) return;
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com"}/task-scheduler/schedules/${selectedSchedule.id}?userId=${userId}`, {
+const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com"}/task-scheduler/schedules/${selectedSchedule.id}?userId=${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(selectedSchedule)
@@ -134,7 +134,7 @@ const TaskScheduler: React.FC = () => {
 
   const downloadSchedule = async (scheduleId: string, title: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com"}/task-scheduler/download/${scheduleId}?userId=${userId}`);
+const response = await fetch(`${import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com"}/task-scheduler/download/${scheduleId}?userId=${userId}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

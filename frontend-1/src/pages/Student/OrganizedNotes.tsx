@@ -3,7 +3,7 @@ import NoteOrganizer from "../../components/NoteOrganizer";
 import type { NoteFilter } from "../../components/NoteOrganizer";
 import NotesList from "../../components/NotesList";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
 
 export default function OrganizedNotes() {
   // State for folders, tags, and notes
