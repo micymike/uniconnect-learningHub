@@ -58,6 +58,19 @@ export class NotesController {
     );
   }
 
+  @Post('flashcard-score')
+  async saveFlashcardScore(
+    @Body('score') score: number,
+    @Body('bonus') bonus: number,
+    @Body('numQuestions') numQuestions: number,
+    @Body('timestamp') timestamp: string,
+    @Req() req: Request
+  ) {
+    if (!req.user || !req.user['userId']) throw new BadRequestException('User not authenticated');
+    const userId = req.user['userId'];
+    return await this.notesService.saveFlashcardScore(userId, score, bonus, numQuestions, timestamp);
+  }
+
   @Get()
   async listNotes(@Req() req: Request) {
     if (!req.user) throw new BadRequestException('User object missing from request. Are you sending a valid JWT?');

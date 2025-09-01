@@ -4,15 +4,13 @@ import "boxicons/css/boxicons.min.css";
 
 const navItems = [
   { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
-  { label: "Courses", path: "courses", icon: "bx bx-book" },
-  { label: "Settings", path: "settings", icon: "bx bx-cog" },
-  { label: "Help", path: "help", icon: "bx bx-help-circle" },
-  { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
-  { label: "Notes", path: "notes", icon: "bx bx-notepad" },
+  { label: "Courses", path: "courses", icon: "bx bx-book" }
 ];
 
 const aiTools = [
   { label: "Study Buddy", path: "/student/chatbot", icon: "bx bx-message-dots" },
+//  { label: "Study Chat", path: "/student/study-chat", icon: "bx bx-chat" },
+  { label: "Matching Game", path: "/student/matching-game", icon: "bx bx-game" },
   { label: "Flashcards", path: "/student/flashcards", icon: "bx bx-collection" },
   { label: "Task Scheduler", path: "/student/task-scheduler", icon: "bx bx-calendar-check" },
   { label: "My Notes", path: "/student/mynotes", icon: "bx bx-notepad" },

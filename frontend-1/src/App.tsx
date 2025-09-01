@@ -14,12 +14,14 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import QuizzesPage from './pages/Admin/Quizzes';
 import StudentDashboardLayout from './pages/Student/StudentDashboardLayout';
 import StudyBuddy from './pages/Student/StudyBuddy';
+import StudyChat from './pages/Student/StudyChat';
 import FlashcardGenerator from './pages/Student/FlashcardGenerator';
 import TaskScheduler from './pages/Student/TaskScheduler';
-
+import MatchingGame from './pages/Student/MatchingGame';
 import MyNotes from './pages/Student/MyNotes';
 import NotesApp from './pages/Student/Notes';
 import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
+import Feedback from './pages/Feedback';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -41,17 +43,32 @@ function RequireAuth({ children, requiredRole }: RequireAuthProps) {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkAuth = () => {
       try {
-        // Check for the correct token key that Login component uses
-        const token = localStorage.getItem("token"); 
+        const token = localStorage.getItem("token");
         const storedRole = localStorage.getItem("userRole");
-        
+        let isTokenValid = false;
+
+        if (token) {
+          // Decode JWT and check expiry
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const exp = payload.exp;
+          const now = Math.floor(Date.now() / 1000);
+          if (exp && exp > now) {
+            isTokenValid = true;
+          } else {
+            // Token expired, remove from storage
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("userRole");
+          }
+        }
+
         if (isMounted) {
           setAuthState({
             isChecking: false,
-            isAuthenticated: !!token,
+            isAuthenticated: isTokenValid,
             userRole: storedRole
           });
         }
@@ -69,12 +86,12 @@ function RequireAuth({ children, requiredRole }: RequireAuthProps) {
 
     // Small delay to prevent immediate redirects
     const timeoutId = setTimeout(checkAuth, 50);
-    
+
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, []); 
+  }, []);
 
   // Show loading while checking authentication
   if (authState.isChecking) {
@@ -148,10 +165,11 @@ function App() {
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="courses" element={<Courses />} />
           <Route path="courses/:id" element={<CourseDetails />} />
-          <Route path="settings" element={<div>Settings Page</div>} />
           <Route path="help" element={<div>Help Page</div>} />
-          <Route path="feedback" element={<div>Feedback Page</div>} />
+          <Route path="matching-game" element={<MatchingGame />} />
+          <Route path="feedback" element={<Feedback />} />
           <Route path="chatbot" element={<StudyBuddy />} />
+          <Route path="study-chat" element={<StudyChat />} />
           <Route path="flashcards" element={<FlashcardGenerator />} />
           <Route path="task-scheduler" element={<TaskScheduler />} />
           <Route path="notes" element={<NotesApp />} />

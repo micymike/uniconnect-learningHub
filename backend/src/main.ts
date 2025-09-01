@@ -40,7 +40,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['https://uniconnect-learninghub-8s1j.onrender.com', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ['https://uniconnect-learninghub-fr.onrender.com', 'http://localhost:3000', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
