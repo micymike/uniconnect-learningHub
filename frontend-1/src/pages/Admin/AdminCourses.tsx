@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_URL = (import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-bc.onrender.com") + "/api";
+const API_URL = (import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com") + "/api";
 type Course = {
   id?: string; 
   title: string;

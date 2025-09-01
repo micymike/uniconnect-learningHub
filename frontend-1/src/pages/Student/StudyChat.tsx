@@ -4,7 +4,7 @@ import { useSocket } from '../../hooks/useSocket';
 import Toast from '../../components/Toast';
 import 'boxicons/css/boxicons.min.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-bc.onrender.com/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-backend.onrender.com/api';
 
 interface Message {
   id: string;
