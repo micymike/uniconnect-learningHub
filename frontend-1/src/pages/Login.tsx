@@ -9,7 +9,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("student");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,11 +31,9 @@ export default function Login() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userRole = localStorage.getItem("userRole");
     
     if (token) {
-      const targetPath = redirectPath.current || 
-                        (userRole === "admin" ? "/admin" : "/student");
+      const targetPath = redirectPath.current || "/student";
       navigate(targetPath, { replace: true });
     }
   }, [navigate]);
@@ -51,7 +48,7 @@ export default function Login() {
       if (mode === "login" || mode === "register") {
         const endpoint = mode === "register" ? "/auth/register" : "/auth/login";
         const payload = mode === "register"
-          ? { email, password, role, fullName }
+          ? { email, password, role: "student", fullName }
           : { email, password };
 
         const res = await fetch(API_URL + endpoint, {
@@ -68,10 +65,7 @@ export default function Login() {
 
         const accessToken = data.session?.access_token || data.access_token;
         const refreshToken = data.session?.refresh_token || data.refresh_token;
-        const userRole = data.profile?.role || 
-                 (data.user && data.user.role) || 
-                 (data.user && data.user.user_metadata && data.user.user_metadata.role) || 
-                 "student";
+        const userRole = "student"; // Always set to student
 
         if (!accessToken || !refreshToken) {
           throw new Error("Authentication tokens missing");
@@ -85,8 +79,7 @@ export default function Login() {
           role: userRole
         }));
         
-        const targetPath = redirectPath.current || 
-                          (userRole === "admin" ? "/admin" : "/student");
+        const targetPath = redirectPath.current || "/student";
         navigate(targetPath, { replace: true });
         
       } else if (mode === "forgotPassword") {
@@ -228,46 +221,6 @@ export default function Login() {
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
-            </motion.div>
-          )}
-          
-          {mode === "register" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-gray-300 mb-2 text-xs sm:text-sm">Account Type</label>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  className={`p-3 sm:p-4 rounded-xl border transition text-xs sm:text-base ${
-                    role === "student" 
-                      ? "bg-orange-500/20 border-orange-500 text-orange-400"
-                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                  }`}
-                  onClick={() => setRole("student")}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mx-auto mb-1 sm:mb-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                  </svg>
-                  <span>Student</span>
-                </button>
-                <button
-                  type="button"
-                  className={`p-3 sm:p-4 rounded-xl border transition text-xs sm:text-base ${
-                    role === "admin" 
-                      ? "bg-orange-500/20 border-orange-500 text-orange-400"
-                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                  }`}
-                  onClick={() => setRole("admin")}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mx-auto mb-1 sm:mb-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                  <span>Admin</span>
-                </button>
-              </div>
             </motion.div>
           )}
           
