@@ -12,7 +12,7 @@ export class ChatService {
   ) {}
 
   async sendMessage(senderId: string, dto: SendMessageDto): Promise<ChatMessage> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.adminSupabase
       .from('chat_messages')
       .insert({
         sender_id: senderId,
@@ -25,11 +25,16 @@ export class ChatService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('Error saving message:', error);
+      throw new Error(error.message);
+    }
+    console.log('Message saved to database:', data);
     return this.mapMessage(data);
   }
 
   async getMessages(userId: string, otherUserId: string, limit = 50): Promise<ChatMessage[]> {
+    console.log('[getMessages] userId:', userId, 'otherUserId:', otherUserId, 'limit:', limit);
     if (!userId || !otherUserId || userId === 'undefined' || otherUserId === 'undefined') {
       return [];
     }
@@ -41,6 +46,8 @@ export class ChatService {
       .eq('is_deleted', false)
       .order('timestamp', { ascending: false })
       .limit(limit);
+
+    console.log('[getMessages] returned data:', JSON.stringify(data, null, 2), 'error:', error);
 
     if (error) return [];
     return data ? data.map(this.mapMessage).reverse() : [];

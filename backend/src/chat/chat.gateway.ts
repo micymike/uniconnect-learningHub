@@ -32,7 +32,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (userId) {
         this.userSockets.set(userId, client.id);
         await this.chatService.updateUserStatus(userId, true);
-        this.server.emit('userOnline', { userId });
+        // Only emit to specific users who need to know, not everyone
+        client.broadcast.emit('userOnline', { userId });
       }
     } catch (error) {
       client.disconnect();
@@ -46,15 +47,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (userId) {
       this.userSockets.delete(userId);
       await this.chatService.updateUserStatus(userId, false);
-      this.server.emit('userOffline', { userId });
+      client.broadcast.emit('userOffline', { userId });
     }
   }
 
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(@MessageBody() data: { userId: string, otherUserId: string }, @ConnectedSocket() client: Socket) {
-    const roomId = [data.userId, data.otherUserId].sort().join('-');
-    client.join(roomId);
-  }
+
 
   @SubscribeMessage('sendMessage')
   async handleMessage(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
@@ -64,8 +61,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         content: data.content,
       });
 
-      const roomId = [data.senderId, data.receiverId].sort().join('-');
-      this.server.to(roomId).emit('newMessage', message);
+      // Send to sender
+      client.emit('newMessage', message);
+      
+      // Send to receiver if online
+      const receiverSocketId = this.userSockets.get(data.receiverId);
+      if (receiverSocketId) {
+        this.server.to(receiverSocketId).emit('newMessage', message);
+      }
     } catch (error) {
       client.emit('error', { message: error.message });
     }
@@ -85,25 +88,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('editMessage')
-  async handleEditMessage(@MessageBody() data: { messageId: string, userId: string, content: string }) {
+  async handleEditMessage(@MessageBody() data: { messageId: string, userId: string, content: string }, @ConnectedSocket() client: Socket) {
     try {
       const message = await this.chatService.editMessage(data.messageId, data.userId, {
         content: data.content,
       });
+
+      // Send to sender
+      client.emit('messageEdited', message);
       
-      this.server.emit('messageEdited', message);
+      // Send to receiver if online
+      const receiverSocketId = this.userSockets.get(message.receiverId);
+      if (receiverSocketId) {
+        this.server.to(receiverSocketId).emit('messageEdited', message);
+      }
     } catch (error) {
-      this.server.emit('error', { message: error.message });
+      client.emit('error', { message: error.message });
     }
   }
 
   @SubscribeMessage('deleteMessage')
-  async handleDeleteMessage(@MessageBody() data: { messageId: string, userId: string }) {
+  async handleDeleteMessage(@MessageBody() data: { messageId: string, userId: string, receiverId: string }, @ConnectedSocket() client: Socket) {
     try {
       await this.chatService.deleteMessage(data.messageId, data.userId);
-      this.server.emit('messageDeleted', { messageId: data.messageId });
+      
+      // Send to sender
+      client.emit('messageDeleted', { messageId: data.messageId });
+      
+      // Send to receiver if online
+      const receiverSocketId = this.userSockets.get(data.receiverId);
+      if (receiverSocketId) {
+        this.server.to(receiverSocketId).emit('messageDeleted', { messageId: data.messageId });
+      }
     } catch (error) {
-      this.server.emit('error', { message: error.message });
+      client.emit('error', { message: error.message });
     }
   }
 }

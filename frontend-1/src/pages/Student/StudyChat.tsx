@@ -42,7 +42,11 @@ interface User {
   user_metadata: UserMetadata;
 }
 
-const StudyChat: React.FC = () => {
+interface StudyChatProps {
+  partnerId?: string;
+}
+
+const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const [user, setUser] = useState<any>(null);
   const { socket, isConnected } = useSocket(user?.id);
   const [studyMates, setStudyMates] = useState<StudyMate[]>([]);
@@ -79,26 +83,38 @@ const StudyChat: React.FC = () => {
   useEffect(() => {
     if (!socket || !user?.id) return;
 
-    // Join rooms for all study mates when socket connects
-    studyMates.forEach(mate => {
-      socket.emit('joinRoom', {
-        userId: user.id,
-        otherUserId: mate.user.id
-      });
-    });
-
     socket.on('newMessage', (message: Message) => {
       console.log('Received new message:', message);
       console.log('message.senderId:', message.senderId, 'message.receiverId:', message.receiverId);
-      
-      setMessages(prev => {
-        // Check if message already exists
-        const exists = prev.some(m => m.id === message.id);
-        if (exists) return prev;
-        
-        // Add message to the array - it will be filtered in render
-        return [...prev, message];
-      });
+
+      // Only add the message if it is for the currently selected conversation
+      if (
+        selectedMate &&
+        user?.id &&
+        (
+          (message.senderId === user.id && message.receiverId === selectedMate.user.id) ||
+          (message.senderId === selectedMate.user.id && message.receiverId === user.id)
+        )
+      ) {
+        setMessages(prev => {
+          // Remove any temporary message with same content and sender
+          const withoutTemp = prev.filter(m => 
+            !(m.id.startsWith('temp-') && 
+              m.senderId === message.senderId && 
+              m.content === message.content)
+          );
+          
+          // Check if real message already exists
+          const exists = withoutTemp.some(m => m.id === message.id);
+          if (exists) return withoutTemp;
+          
+          // Add the real message
+          return [...withoutTemp, {
+            ...message,
+            timestamp: new Date(message.timestamp)
+          }];
+        });
+      }
     });
 
     socket.on('userTyping', ({ userId, isTyping }) => {
@@ -134,44 +150,55 @@ const StudyChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [filteredMessages]);
 
+  // Always clear and reload messages when partnerId changes
   useEffect(() => {
-    loadStudyMates();
-  }, []);
+    if (partnerId) {
+      loadStudyMates().then(() => {
+        const partner = studyMates.find(mate => mate.user.id === partnerId);
+        if (partner) {
+          setSelectedMate(partner);
+          setMessages([]); // Clear messages before loading new ones
+          loadMessages(partner.user.id);
+        }
+      });
+    } else {
+      loadStudyMates();
+      setSelectedMate(null);
+      setMessages([]);
+    }
+  }, [partnerId]);
 
   const loadStudyMates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/chat/available-users`, {
+      const response = await fetch(`${API_BASE}/users/study-partners`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
-      // Map user_profiles rows to StudyMate shape for compatibility
-setStudyMates(
-  Array.isArray(data)
-    ? data.map((profile: any) => ({
-        id: profile.id,
-        user: {
-          id: profile.user?.id || profile.id,
-          email: profile.user?.email || profile.email,
-          user_metadata: profile.user?.user_metadata || {
-            full_name:
-              profile.full_name && profile.full_name.trim().length > 0
-                ? profile.full_name
-                : (profile.name || profile.username || profile.email),
-            avatar_url: profile.avatar_url || null,
-            role: profile.role || 'user',
-            created_at: profile.created_at,
-            updated_at: profile.updated_at
-          }
-        },
-        is_online: profile.is_online ?? false,
-        last_seen: profile.last_seen ? new Date(profile.last_seen) : null,
-        is_typing: false
-      }))
-    : []
-);
+      // The endpoint returns { partners: [...] }
+      setStudyMates(
+        Array.isArray(data.partners)
+          ? data.partners.map((partner: any) => ({
+              id: partner.id,
+              user: {
+                id: partner.id,
+                email: partner.email,
+                user_metadata: {
+                  full_name: partner.full_name || partner.email,
+                  avatar_url: partner.avatar_url || null,
+                  role: partner.role || 'user',
+                  created_at: partner.created_at,
+                  updated_at: partner.updated_at
+                }
+              },
+              is_online: partner.is_online ?? false,
+              last_seen: partner.last_seen ? new Date(partner.last_seen) : null,
+              is_typing: false
+            }))
+          : []
+      );
     } catch (error) {
-      console.error('Error loading available users:', error);
+      console.error('Error loading study partners:', error);
     }
   };
 
@@ -179,7 +206,6 @@ setStudyMates(
     setMessagesLoading(true);
     try {
       if (!mateId) {
-        setMessages([]);
         setMessagesLoading(false);
         return;
       }
@@ -188,22 +214,33 @@ setStudyMates(
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) {
-        setMessages([]);
         setToast({ type: 'error', message: `Failed to load messages (${response.status}): ${response.statusText}` });
         setMessagesLoading(false);
         return;
       }
       const data = await response.json();
       if (!Array.isArray(data)) {
-        setMessages([]);
         setToast({ type: 'error', message: 'Invalid response format from server.' });
         setMessagesLoading(false);
         return;
       }
-      // Empty array is valid - it just means no messages yet
-      setMessages(data);
+      
+      // Convert timestamps and merge with existing messages
+      const newMessages = data.map(msg => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      
+      setMessages(prev => {
+        // Remove existing messages for this conversation
+        const otherMessages = prev.filter(m => 
+          !((m.senderId === user?.id && m.receiverId === mateId) ||
+            (m.senderId === mateId && m.receiverId === user?.id))
+        );
+        // Add the loaded messages
+        return [...otherMessages, ...newMessages];
+      });
     } catch (error: any) {
-      setMessages([]);
       setToast({ type: 'error', message: `Error loading messages: ${error?.message || 'Unknown error'}` });
       console.error('Error loading messages:', error);
     } finally {
@@ -338,11 +375,12 @@ setStudyMates(
   };
 
   const deleteMessage = (messageId: string) => {
-    if (!socket) return;
+    if (!socket || !selectedMate) return;
 
     socket.emit('deleteMessage', {
       messageId,
-      userId: user.id
+      userId: user.id,
+      receiverId: selectedMate.user.id
     });
   };
 
@@ -353,16 +391,8 @@ setStudyMates(
       return;
     }
     setSelectedMate(mate);
-    // Clear messages immediately to avoid showing wrong conversation
-    setMessages([]);
+    setMessages([]); // Clear messages before loading new ones
     loadMessages(mate.user.id);
-    if (socket && user?.id) {
-      console.log('Joining room for users:', user.id, mate.user.id);
-      socket.emit('joinRoom', {
-        userId: user.id,
-        otherUserId: mate.user.id
-      });
-    }
   };
 
   const canEditMessage = (message: Message) => {
@@ -377,7 +407,7 @@ setStudyMates(
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col lg:flex-row">
+    <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
       {toast && (
         <Toast
           type={toast.type}
@@ -385,148 +415,12 @@ setStudyMates(
           onClose={() => setToast(null)}
         />
       )}
-      {/* Sidebar */}
-      <div className={`${selectedMate ? 'hidden lg:flex' : 'flex'} w-full max-w-full lg:max-w-xs lg:w-80 bg-gray-800 border-r border-gray-700 flex-col`}>
-        {/* Header */}
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-white">Study Chat</h1>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
-              <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-          </div>
-          
-          {/* Search */}
-          <div className="space-y-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
-                className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <button
-                onClick={searchUsers}
-                className="absolute right-2 top-2 text-gray-400 hover:text-orange-500"
-              >
-                <i className="bx bx-search"></i>
-              </button>
-            </div>
-            
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="bg-gray-700 rounded-lg max-h-40 overflow-y-auto">
-                {searchResults.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-3 hover:bg-gray-600 cursor-pointer flex items-center justify-between"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata.full_name)}&background=ff6600&color=fff&size=32`}
-                        alt="Avatar"
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <span className="text-white text-sm">{user.user_metadata.full_name}</span>
-                    </div>
-                    <button
-                      onClick={() => addStudyMate(user.id)}
-                      className="text-orange-500 hover:text-orange-400"
-                    >
-                      <i className="bx bx-plus"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Study Mates List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <h3 className="text-gray-400 text-sm font-semibold mb-3">Study Mates</h3>
-          {studyMates.map((mate) => (
-            <div
-              key={mate.id}
-              onClick={() => selectMate(mate)}
-              className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
-                selectedMate?.id === mate.id ? 'bg-orange-500' : 'hover:bg-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <img
-                    src={
-                      mate.user.user_metadata.avatar_url
-                        ? mate.user.user_metadata.avatar_url
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(mate.user.user_metadata.full_name)}&background=ff6600&color=fff&size=40`
-                    }
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${
-                    mate.is_online ? 'bg-green-400' : 'bg-gray-500'
-                  }`}></div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-white font-medium">{mate.user.user_metadata.full_name}</p>
-                  <p className="text-gray-400 text-xs">
-                    {mate.is_online
-                      ? 'Online'
-                      : mate.last_seen
-                        ? `Last seen ${formatTime(mate.last_seen)}`
-                        : 'Last seen Unknown'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Chat Area */}
-      <div className={`${selectedMate ? 'flex' : 'hidden lg:flex'} flex-1 flex-col h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-screen`}>
+      <div className="flex flex-col h-full w-full">
         {selectedMate ? (
           <>
-            {/* Chat Header */}
-            <div className="bg-gray-800 border-b border-gray-700 p-4 flex-shrink-0">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setSelectedMate(null)}
-                  className="lg:hidden text-white hover:text-orange-500 mr-2"
-                >
-                  <i className="bx bx-arrow-back text-xl"></i>
-                </button>
-                <img
-                  src={
-                    selectedMate.user.user_metadata.avatar_url
-                      ? selectedMate.user.user_metadata.avatar_url
-                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMate.user.user_metadata.full_name)}&background=ff6600&color=fff&size=40`
-                  }
-                  alt="Avatar"
-                  className="w-10 h-10 rounded-full"
-                />
-                <div>
-                  <h2 className="text-white font-semibold">{selectedMate.user.user_metadata.full_name}</h2>
-                  <p className="text-gray-400 text-sm">
-                    {selectedMate.is_online
-                      ? 'Online'
-                      : selectedMate.last_seen
-                        ? `Last seen ${formatTime(selectedMate.last_seen)}`
-                        : 'Last seen Unknown'}
-                    {typingUsers.has(selectedMate.user.id) && ' • typing...'}
-                    {' • '}{filteredMessages.length} messages
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Messages */}
+            {/* Messages Area */}
             <div className="flex-1 p-4 space-y-4 overflow-y-auto overflow-x-hidden">
               {messagesLoading ? (
                 <div className="text-center text-gray-400 mt-8">
@@ -543,7 +437,7 @@ setStudyMates(
                       key={message.id}
                       className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
+                      <div className={`max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg break-words ${
                         message.senderId === user?.id
                           ? 'bg-orange-500 text-white'
                           : 'bg-gray-700 text-white'
@@ -609,9 +503,9 @@ setStudyMates(
               )}
             </div>
 
-            {/* Message Input */}
-            <div className="bg-gray-800 border-t border-gray-700 p-4 flex-shrink-0">
-              <div className="flex space-x-3">
+            {/* Message Input - Sticky at bottom */}
+            <div className="bg-gray-800 border-t border-gray-700 p-3 sm:p-4 sticky bottom-0 z-10">
+              <div className="flex space-x-2 sm:space-x-3">
                 <input
                   type="text"
                   value={newMessage}
@@ -621,23 +515,23 @@ setStudyMates(
                   }}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder="Type a message..."
-                  className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="flex-1 bg-gray-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}
-                  className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors"
+                  className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg transition-colors flex-shrink-0"
                 >
-                  <i className="bx bx-send"></i>
+                  <i className="bx bx-send text-sm sm:text-base"></i>
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div className="hidden lg:flex flex-1 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center p-4">
             <div className="text-center text-gray-400">
-              <i className="bx bx-message-dots text-6xl mb-4"></i>
-              <p className="text-xl">Select a study mate to start chatting</p>
+              <i className="bx bx-message-dots text-4xl sm:text-6xl mb-4"></i>
+              <p className="text-lg sm:text-xl">Select a study mate to start chatting</p>
             </div>
           </div>
         )}

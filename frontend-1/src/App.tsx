@@ -22,6 +22,8 @@ import MyNotes from './pages/Student/MyNotes';
 import NotesApp from './pages/Student/Notes';
 import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
 import Feedback from './pages/Feedback';
+import FindStudyPartner from './pages/Student/FindStudyPartner';
+import StudySpace from './pages/Student/StudySpace';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -173,7 +175,9 @@ function App() {
           <Route path="flashcards" element={<FlashcardGenerator />} />
           <Route path="task-scheduler" element={<TaskScheduler />} />
           <Route path="notes" element={<NotesApp />} />
-  <Route path="mynotes" element={<MyNotesWithBuddy />} />       
+          <Route path="mynotes" element={<MyNotesWithBuddy />} />
+          <Route path="find-partner" element={<FindStudyPartner />} />
+          <Route path="study-space" element={<StudySpace />} />
         </Route>
       </Routes>
     </Router>
