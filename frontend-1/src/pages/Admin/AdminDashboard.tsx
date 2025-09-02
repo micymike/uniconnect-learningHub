@@ -44,13 +44,6 @@ export default function AdminDashboard() {
       path: "lessons",
       color: "text-blue-500"
     },
-    { 
-      title: "User Management", 
-      description: "Manage student accounts and user permissions", 
-      icon: "bx bx-group", 
-      path: "users",
-      color: "text-purple-500"
-    }
   ];
 
   return (
