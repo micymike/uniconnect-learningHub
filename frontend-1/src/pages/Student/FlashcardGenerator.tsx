@@ -6,7 +6,9 @@ type Flashcard = {
   explanation?: string;
 };
 
-
+const api_url =
+  import.meta.env.VITE_API_URL ||
+"https://uniconnect-learninghub-backend.onrender.com/api";
 
 export default function FlashcardGenerator() {
   const [inputType, setInputType] = useState<"text" | "file">("text");
@@ -20,6 +22,46 @@ export default function FlashcardGenerator() {
   const [modalInput, setModalInput] = useState("5");
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Game mode state
+  const [gameMode, setGameMode] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [points, setPoints] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [gameOver, setGameOver] = useState(false);
+  const [bonus, setBonus] = useState(0);
+  const [checking, setChecking] = useState(false);
+
+  // Save score to backend when game ends
+  React.useEffect(() => {
+    const postScore = async () => {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const res = await fetch(`${api_url}/notes/flashcard-score`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            score: points,
+            bonus,
+            numQuestions: flashcards.length,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        // Optionally handle response
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    if (gameOver && points > 0 && flashcards.length > 0) {
+      postScore();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver]);
+
   const generateFlashcards = async () => {
     setLoading(true);
     setError("");
@@ -27,12 +69,11 @@ export default function FlashcardGenerator() {
     try {
       let response;
       const token = localStorage.getItem("token") || "";
-      console.log("Token sent to backend:", token);
       if (inputType === "file" && file) {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("numQuestions", numQuestions.toString());
-        response = await fetch("http://localhost:3004/api/ai/flashcards", {
+        response = await fetch(`${api_url}/ai/flashcards`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -40,7 +81,7 @@ export default function FlashcardGenerator() {
           body: formData,
         });
       } else {
-        response = await fetch("http://localhost:3004/api/ai/flashcards", {
+        response = await fetch(`${api_url}/ai/flashcards`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -75,7 +116,7 @@ export default function FlashcardGenerator() {
     try {
       const token = localStorage.getItem("token") || "";
       const fc = flashcards[idx];
-      const response = await fetch("http://localhost:3004/api/ai/explain-flashcard", {
+      const response = await fetch(`${api_url}/ai/explain-flashcard`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,6 +149,95 @@ export default function FlashcardGenerator() {
     }
   };
 
+  // Game logic
+  const startGame = () => {
+    setGameMode(true);
+    setCurrentIdx(0);
+    setPoints(0);
+    setStreak(0);
+    setFeedback("");
+    setGameOver(false);
+    setBonus(0);
+    setUserAnswer("");
+  };
+
+  const [answered, setAnswered] = useState(false);
+
+  const submitAnswer = async () => {
+    if (!gameMode || gameOver || checking || answered) return;
+    setChecking(true);
+    const fc = flashcards[currentIdx];
+    let newPoints = points;
+    let newStreak = streak;
+    let newBonus = bonus;
+    let aiCorrect = false;
+    let aiFeedback = "";
+
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(`${api_url}/ai/check-flashcard-answer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: fc.question,
+          answer: fc.answer,
+          userAnswer,
+        }),
+      });
+      if (!res.ok) throw new Error("AI answer check failed");
+      const data = await res.json();
+      aiCorrect = data.correct;
+      aiFeedback = data.feedback || "";
+    } catch (err) {
+      aiCorrect = false;
+      aiFeedback = "Could not check answer. Please try again.";
+    }
+
+    if (aiCorrect) {
+      newPoints += 1;
+      newStreak += 1;
+      setFeedback("Correct! +1 point");
+      if (newStreak > 0 && newStreak % 5 === 0) {
+        newPoints += 2;
+        newBonus += 2;
+        setFeedback("Correct! +1 point (+2 streak bonus!)");
+      }
+    } else {
+      setFeedback(aiFeedback ? `Incorrect. ${aiFeedback}` : "Incorrect. 0 points");
+      newStreak = 0;
+    }
+    setPoints(newPoints);
+    setStreak(newStreak);
+    setBonus(newBonus);
+    setAnswered(true);
+    setChecking(false);
+  };
+
+  const nextQuestion = () => {
+    if (currentIdx + 1 < flashcards.length) {
+      setCurrentIdx(currentIdx + 1);
+      setUserAnswer("");
+      setFeedback("");
+      setAnswered(false);
+    } else {
+      setGameOver(true);
+    }
+  };
+
+  const resetGame = () => {
+    setGameMode(false);
+    setCurrentIdx(0);
+    setUserAnswer("");
+    setPoints(0);
+    setStreak(0);
+    setFeedback("");
+    setGameOver(false);
+    setBonus(0);
+  };
+
   return (
     <div className="min-h-screen w-full bg-black flex flex-col items-center px-2 sm:px-4 py-4 sm:py-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-orange-400 mb-6 sm:mb-8 text-center">
@@ -119,12 +249,14 @@ export default function FlashcardGenerator() {
             <button
               className={`flex-1 py-2 rounded ${inputType === "text" ? "bg-orange-500 text-white" : "bg-gray-800 text-gray-300"}`}
               onClick={() => setInputType("text")}
+              disabled={gameMode}
             >
               Paste Text
             </button>
             <button
               className={`flex-1 py-2 rounded ${inputType === "file" ? "bg-orange-500 text-white" : "bg-gray-800 text-gray-300"}`}
               onClick={() => setInputType("file")}
+              disabled={gameMode}
             >
               Upload PDF/DOCX
             </button>
@@ -135,6 +267,7 @@ export default function FlashcardGenerator() {
               placeholder="Paste your study material here..."
               value={text}
               onChange={(e) => setText(e.target.value)}
+              disabled={gameMode}
             />
           ) : (
             <input
@@ -142,6 +275,7 @@ export default function FlashcardGenerator() {
               accept=".pdf,.doc,.docx"
               className="w-full p-2 rounded bg-gray-800 text-white border border-gray-700"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
+              disabled={gameMode}
             />
           )}
           <div>
@@ -153,12 +287,13 @@ export default function FlashcardGenerator() {
               value={numQuestions}
               onChange={(e) => setNumQuestions(Number(e.target.value))}
               className="w-full p-2 rounded bg-gray-800 text-white border border-gray-700"
+              disabled={gameMode}
             />
           </div>
           <button
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded font-semibold transition mt-2"
             onClick={generateFlashcards}
-            disabled={loading || (!text && !file)}
+            disabled={loading || (!text && !file) || gameMode}
           >
             {loading ? "Generating..." : "Generate Flashcards"}
           </button>
@@ -168,7 +303,7 @@ export default function FlashcardGenerator() {
         </div>
       </div>
       <div className="w-full max-w-2xl">
-        {flashcards.length > 0 && (
+        {flashcards.length > 0 && !gameMode && (
           <div className="mb-8">
             <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-4 text-center">
               Generated Flashcards
@@ -203,6 +338,12 @@ export default function FlashcardGenerator() {
               >
                 Get More Questions
               </button>
+              <button
+                className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-semibold text-base"
+                onClick={startGame}
+              >
+                Play Game
+              </button>
             </div>
             {showModal && (
               <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -234,7 +375,7 @@ export default function FlashcardGenerator() {
                               const formData = new FormData();
                               formData.append("file", file);
                               formData.append("numQuestions", moreNum.toString());
-                              response = await fetch("http://localhost:3004/api/ai/flashcards", {
+                              response = await fetch(`${api_url}/ai/flashcards`, {
                                 method: "POST",
                                 headers: {
                                   "Authorization": `Bearer ${token}`,
@@ -242,7 +383,7 @@ export default function FlashcardGenerator() {
                                 body: formData,
                               });
                             } else {
-                              response = await fetch("http://localhost:3004/api/ai/flashcards", {
+                              response = await fetch(`${api_url}/ai/flashcards`, {
                                 method: "POST",
                                 headers: {
                                   "Content-Type": "application/json",
@@ -289,6 +430,77 @@ export default function FlashcardGenerator() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+        {gameMode && flashcards.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-4 text-center">
+              Flashcard Game Mode
+            </h2>
+            <div className="flex flex-col items-center mb-4">
+              <div className="text-lg font-semibold text-orange-500 mb-2">
+                Points: {points} {bonus > 0 && <span className="text-green-500">(+{bonus} bonus)</span>}
+              </div>
+              <div className="text-md text-gray-300 mb-2">
+                Streak: {streak}
+              </div>
+            </div>
+            {!gameOver ? (
+              <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <div className="font-semibold text-gray-900 mb-2">
+                  Q{currentIdx + 1}: {flashcards[currentIdx].question}
+                </div>
+                  <input
+                  type="text"
+                  className="w-full p-2 rounded bg-gray-100 text-gray-900 border border-gray-300 mb-2"
+                  placeholder="Type your answer..."
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  disabled={answered || checking}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !answered && !checking) submitAnswer();
+                  }}
+                />
+                <button
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-semibold text-base mt-2"
+                  onClick={submitAnswer}
+                  disabled={answered || checking}
+                >
+                  {checking ? "Checking..." : "Submit Answer"}
+                </button>
+                {feedback && (
+                  <div className={`mt-3 p-2 rounded text-center ${feedback.startsWith("Correct") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {feedback}
+                  </div>
+                )}
+                {answered && !gameOver && (
+                  <button
+                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded font-semibold text-base"
+                    onClick={nextQuestion}
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <div className="font-semibold text-gray-900 mb-2">
+                  Game Over!
+                </div>
+                <div className="text-lg text-orange-500 mb-2">
+                  Total Points: {points}
+                </div>
+                <div className="text-md text-gray-700 mb-2">
+                  Streak Bonus: {bonus}
+                </div>
+                <button
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold text-base mt-2"
+                  onClick={resetGame}
+                >
+                  Play Again
+                </button>
               </div>
             )}
           </div>

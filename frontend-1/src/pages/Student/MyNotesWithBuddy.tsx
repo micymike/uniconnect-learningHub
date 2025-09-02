@@ -19,7 +19,7 @@ export default function MyNotesWithBuddy() {
     setLoading(true);
     setError(null);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3004/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
       const token = localStorage.getItem("token") || "";
       const res = await fetch(`${API_URL}/notes`, {
         headers: { Authorization: `Bearer ${token}` },

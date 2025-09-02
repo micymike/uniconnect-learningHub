@@ -9,12 +9,21 @@ type Course = {
   description: string;
 };
 
-const API_URL = import.meta.env.VITE_API_URL;
+type LearningPathItem = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
 
 export default function StudentDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [learningPath, setLearningPath] = useState<LearningPathItem[]>([]);
+  const [lpLoading, setLpLoading] = useState(false);
+  const [lpError, setLpError] = useState("");
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const fullName = user?.user_metadata?.full_name || user?.fullName || user?.email || "Student";
@@ -35,6 +44,40 @@ export default function StudentDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch learning path on mount
+  useEffect(() => {
+    const fetchLearningPath = async () => {
+      setLpLoading(true);
+      setLpError("");
+      try {
+        const token = localStorage.getItem("token") || "";
+        // For demo, send empty performanceData; in production, send real quiz/note data
+        const res = await fetch(`${API_URL}/ai/learning-path`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            performanceData: {
+              quizResults: [],
+              notes: [],
+              completedLessons: [],
+            },
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to fetch learning path");
+        const data = await res.json();
+        setLearningPath(data.learningPath || []);
+      } catch (err: any) {
+        setLpError(err.message || "Failed to load learning path");
+      } finally {
+        setLpLoading(false);
+      }
+    };
+    fetchLearningPath();
+  }, []);
+
   const stats = [
     { label: "Total Courses", value: courses.length, icon: "bx bx-book", color: "text-orange-500" },
     { label: "Completed", value: Math.floor(courses.length * 0.3), icon: "bx bx-check-circle", color: "text-green-500" },
@@ -50,6 +93,30 @@ export default function StudentDashboard() {
           Welcome back, <span className="text-orange-500">{fullName.split(' ')[0]}</span>! 👋
         </h1>
         <p className="text-gray-400 text-lg">Ready to continue your learning journey?</p>
+      </div>
+
+      {/* Learning Path Section */}
+      <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-orange-500 animate-fade-in-up animation-delay-200">
+        <h2 className="text-xl font-bold text-orange-400 mb-4 flex items-center">
+          <i className="bx bx-map text-orange-400 mr-2"></i>
+          Your AI Learning Path
+        </h2>
+        {lpLoading ? (
+          <div className="text-gray-400">Loading learning path...</div>
+        ) : lpError ? (
+          <div className="bg-red-900 text-red-300 p-2 rounded">{lpError}</div>
+        ) : learningPath.length === 0 ? (
+          <div className="text-gray-400">No personalized path available yet.</div>
+        ) : (
+          <ol className="list-decimal ml-6 space-y-3">
+            {learningPath.map((item, idx) => (
+              <li key={item.id || idx} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="font-bold text-white">{item.title}</div>
+                <div className="text-gray-400 text-sm">{item.description}</div>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
 
       {/* Quick Stats */}
@@ -175,11 +242,12 @@ export default function StudentDashboard() {
           <i className="bx bx-zap text-orange-500 mr-2"></i>
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
             { label: "Study Buddy", icon: "bx bx-message-dots", path: "/student/chatbot" },
             { label: "Flashcards", icon: "bx bx-collection", path: "/student/flashcards" },
-            { label: "My Notes", icon: "bx bx-notepad", path: "/student/mynotes" }
+            { label: "My Notes", icon: "bx bx-notepad", path: "/student/mynotes" },
+            { label: "Smart Quiz", icon: "bx bx-brain", path: "/student/smartquiz" }
           ].map((action, index) => (
             <button
               key={action.label}

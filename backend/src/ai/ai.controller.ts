@@ -7,15 +7,54 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class AIController {
   constructor(private readonly aiService: AIService) {}
 
+  // Analyze Image (OCR + AI Explanation)
+  @UseGuards(JwtAuthGuard)
+  @Post('analyze-image')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async analyzeImage(
+    @Req() req,
+    @UploadedFile() image: Express.Multer.File,
+    @Body('prompt') prompt: string,
+  ): Promise<{ explanation: string }> {
+    const userId = req.user.userId;
+    const explanation = await this.aiService.analyzeImage(userId, image, prompt);
+    return { explanation };
+  }
+
+  // Dynamic Learning Path
+  @UseGuards(JwtAuthGuard)
+  @Post('learning-path')
+  async generateLearningPath(
+    @Req() req,
+    @Body('performanceData') performanceData: any,
+  ): Promise<{ learningPath: { id: string; title: string; description: string }[] }> {
+    const userId = req.user.userId;
+    return await this.aiService.generateLearningPath(userId, performanceData);
+  }
+  // Smart Quiz Generator
+  @UseGuards(JwtAuthGuard)
+  @Post('generate-quiz')
+  async generateSmartQuiz(
+    @Req() req,
+    @Body() body: any,
+  ): Promise<{ quiz: { question: string; options: string[]; answer: string; explanation?: string }[] }> {
+    const userId = req.user.userId;
+    const { notes, quizHistory, numQuestions = 5 } = body;
+    return await this.aiService.generateSmartQuiz(userId, notes, quizHistory, numQuestions);
+  }
+
   // Study Buddy Chatbot
   @UseGuards(JwtAuthGuard)
   @Post('chat')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async studyBuddyChat(
     @Req() req,
     @Body('message') message: string,
+    @Body('context') context: any,
+    @UploadedFile() image: Express.Multer.File,
   ): Promise<{ reply: string }> {
     const userId = req.user.userId;
-    const reply = await this.aiService.studyBuddyChat(userId, message);
+    const reply = await this.aiService.studyBuddyChat(userId, message, image, context);
     return { reply };
   }
 
@@ -44,6 +83,31 @@ export class AIController {
     const userId = req.user.userId;
     const explanation = await this.aiService.explainFlashcard(userId, question, answer);
     return { explanation };
+  }
+
+  // Flashcard AI Answer Check
+  @UseGuards(JwtAuthGuard)
+  @Post('check-flashcard-answer')
+  async checkFlashcardAnswer(
+    @Req() req,
+    @Body('question') question: string,
+    @Body('answer') answer: string,
+    @Body('userAnswer') userAnswer: string,
+  ): Promise<{ correct: boolean, feedback?: string }> {
+    const userId = req.user.userId;
+    return await this.aiService.checkFlashcardAnswer(userId, question, answer, userAnswer);
+  }
+
+  // Matching Game Pairs
+  @UseGuards(JwtAuthGuard)
+  @Post('matching-pairs')
+  async getMatchingPairs(
+    @Req() req,
+    @Body('text') text: string,
+    @Body('numPairs') numPairs: number = 8,
+  ): Promise<{ pairs: { term: string; definition: string }[] }> {
+    const userId = req.user.userId;
+    return await this.aiService.getMatchingPairs(userId, text, numPairs);
   }
 
   // Study Assistant: Ask about uploaded document

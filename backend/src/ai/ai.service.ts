@@ -14,10 +14,12 @@ export class AIService {
   // Study Buddy Chatbot (memory-enabled, friendly)
   async studyBuddyChat(
     studentId: string,
-    message: string
+    message: string,
+    image?: Express.Multer.File,
+    context?: any
   ): Promise<string> {
     // Retrieve or create student context
-    let { data: context, error } = await this.supabase
+    let { data: dbContext, error } = await this.supabase
       .from('student_ai_context')
       .select('*')
       .eq('student_id', studentId)
@@ -27,7 +29,7 @@ export class AIService {
       throw error;
     }
 
-    if (!context) {
+    if (!dbContext) {
       // Create new context
       const { data: newContext, error: insertError } = await this.supabase
         .from('student_ai_context')
@@ -40,34 +42,113 @@ export class AIService {
         .select('*')
         .maybeSingle();
       if (insertError) throw insertError;
-      context = newContext;
+      dbContext = newContext;
     }
 
     // Prepare conversation history for context (limit to last 20 exchanges)
-    const history = context.conversation_history || [];
-    const prompt = [
-      "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.",
-      "Here is the conversation so far:",
-      ...history,
-      `Q: ${message}`,
-      "A:"
-    ].join('\n');
+    const history = dbContext.conversation_history || [];
+    // Build a context-aware system prompt
+    let systemPrompt = "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.";
+    // Add proactive context if provided
+    if (context && typeof context === "object") {
+      if (context.notes && Array.isArray(context.notes) && context.notes.length > 0) {
+        systemPrompt += `\nThe student has the following recent notes: ${context.notes.join(" | ")}.`;
+      }
+      if (context.quizResults && Array.isArray(context.quizResults) && context.quizResults.length > 0) {
+        systemPrompt += `\nRecent quiz results: ${JSON.stringify(context.quizResults)}.`;
+      }
+      if (context.learningPath && Array.isArray(context.learningPath) && context.learningPath.length > 0) {
+        systemPrompt += `\nTheir current learning path: ${context.learningPath.map((lp: any) => lp.title).join(", ")}.`;
+      }
+      systemPrompt += "\nIf you notice weak areas, proactively suggest review, quizzes, or flashcards. If the student is making progress, offer encouragement and next steps.";
+    }
 
-    // Call Azure OpenAI
-    const aiReply = await this.callAzureOpenAI(prompt);
+    // If image is provided, use vision model payload
+    if (image && image.buffer) {
+      try {
+        const base64Image = image.buffer.toString('base64');
+        const base = process.env.AZURE_API_BASE;
+        const deployment = process.env.AZURE_API_MODEL;
+        const apiVersion = process.env.AZURE_API_VERSION;
+        const apiKey = process.env.AZURE_API_KEY;
+        if (!base || !deployment || !apiVersion || !apiKey) {
+          throw new Error("Azure OpenAI API configuration is incomplete in environment variables.");
+        }
+        const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+        const payload = {
+          model: deployment,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: [ "Here is the conversation so far:", ...history, `Q: ${message}`, "A:" ].join('\n') },
+                { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
+              ]
+            }
+          ],
+          max_tokens: 512
+        };
+        const headers = {
+          "Content-Type": "application/json",
+          "api-key": apiKey
+        };
+        try {
+          const response = await axios.post(endpoint, payload, { headers });
+          console.log("Azure OpenAI response for image:", response.data);
+          const aiReply = response.data.choices?.[0]?.message?.content?.trim() || "No reply returned.";
 
-    // Store the new Q&A in conversation history
-    const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
+          // Store the new Q&A in conversation history
+          const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
 
-    // Update context in Supabase
-    const { error: updateError } = await this.supabase
-      .from('student_ai_context')
-      .update({ conversation_history: updatedHistory })
-      .eq('student_id', studentId);
+          // Update context in Supabase
+          const { error: updateError } = await this.supabase
+            .from('student_ai_context')
+            .update({ conversation_history: updatedHistory })
+            .eq('student_id', studentId);
 
-    if (updateError) throw updateError;
+          if (updateError) throw updateError;
 
-    return aiReply;
+          return aiReply;
+        } catch (err: any) {
+          if (err.response) {
+            console.error("Azure OpenAI error response:", err.response.data);
+            return `Error from Azure OpenAI: ${JSON.stringify(err.response.data)}`;
+          } else {
+            console.error("Error processing image in studyBuddyChat:", err);
+            return "Sorry, I couldn't process the image. Please make sure the image is valid and try again.";
+          }
+        }
+      } catch (err) {
+        console.error("Error processing image in studyBuddyChat (outer catch):", err);
+        return "Sorry, I couldn't process the image. Please make sure the image is valid and try again.";
+      }
+    } else {
+      // Text-only fallback
+      const prompt = [
+        systemPrompt,
+        "Here is the conversation so far:",
+        ...history,
+        `Q: ${message}`,
+        "A:"
+      ].join('\n');
+
+      // Call Azure OpenAI
+      const aiReply = await this.callAzureOpenAI(prompt);
+
+      // Store the new Q&A in conversation history
+      const updatedHistory = [...history, `Q: ${message}`, `A: ${aiReply}`].slice(-20);
+
+      // Update context in Supabase
+      const { error: updateError } = await this.supabase
+        .from('student_ai_context')
+        .update({ conversation_history: updatedHistory })
+        .eq('student_id', studentId);
+
+      if (updateError) throw updateError;
+
+      return aiReply;
+    }
   }
 
   // Flashcard Generator
@@ -195,10 +276,194 @@ export class AIService {
     return explanation;
   }
 
+  // AI checks if user's answer is correct for a flashcard
+  async checkFlashcardAnswer(
+    userId: string,
+    question: string,
+    answer: string,
+    userAnswer: string
+  ): Promise<{ correct: boolean, feedback?: string }> {
+    const prompt = [
+      "You are an AI tutor. Given a flashcard question, the correct answer, and a student's answer, judge if the student's answer is correct.",
+      "If the answer is correct, reply with 'CORRECT'. If not, reply with 'INCORRECT' and a brief feedback message for the student.",
+      `Question: ${question}`,
+      `Correct Answer: ${answer}`,
+      `Student's Answer: ${userAnswer}`,
+      "Result:"
+    ].join("\n");
+
+    const aiResponse = await this.callAzureOpenAI(prompt);
+    if (aiResponse.trim().toUpperCase().startsWith("CORRECT")) {
+      return { correct: true };
+    } else if (aiResponse.trim().toUpperCase().startsWith("INCORRECT")) {
+      // Extract feedback after "INCORRECT"
+      const feedback = aiResponse.replace(/INCORRECT[:\-]?\s*/i, "").trim();
+      return { correct: false, feedback };
+    } else {
+      // Fallback: treat as incorrect with generic feedback
+      return { correct: false, feedback: aiResponse.trim() };
+    }
+  }
+
+  // Analyze Image (Vision Model)
+  async analyzeImage(
+    userId: string,
+    image: Express.Multer.File,
+    prompt?: string
+  ): Promise<string> {
+    if (!image || !image.buffer) {
+      throw new Error("No image file provided.");
+    }
+    // Convert image buffer to base64
+    const base64Image = image.buffer.toString('base64');
+    // Prepare payload for vision model (e.g., Azure OpenAI, OpenAI GPT-4 Vision)
+    // Use only the credentials and endpoint as defined in .env (do not change or add fallbacks)
+    const base = process.env.AZURE_API_BASE;
+    const deployment = process.env.AZURE_API_MODEL;
+    const apiVersion = process.env.AZURE_API_VERSION;
+    const apiKey = process.env.AZURE_API_KEY;
+    
+    if (!base || !deployment || !apiVersion || !apiKey) {
+      throw new Error("Azure OpenAI API configuration is incomplete in environment variables.");
+    }
+    
+    // Construct the proper endpoint like in callAzureOpenAI
+    const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+    // Use user prompt or fallback to default
+    const userPrompt = prompt && prompt.trim().length > 0
+      ? prompt.trim()
+      : "Explain the content of this image for a student.";
+    // Payload for GPT-4.1 image support (gpt-4-1106-preview or similar)
+    const payload = {
+      model: process.env.AZURE_API_MODEL,
+      messages: [
+        { role: "system", content: "You are Study Buddy, a friendly AI that explains images to students in simple, supportive language." },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt },
+            { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
+          ]
+        }
+      ],
+      max_tokens: 512
+    };
+    const headers = {
+      "Content-Type": "application/json",
+      "api-key": apiKey
+    };
+    // Send request to vision model
+    const response = await axios.post(endpoint, payload, { headers });
+    const explanation = response.data.choices?.[0]?.message?.content?.trim() || "No explanation returned.";
+    return explanation;
+  }
+
+  // Matching Game: Extract pairs for matching game
+  async getMatchingPairs(
+    userId: string,
+    text: string,
+    numPairs: number
+  ): Promise<{ pairs: { term: string; definition: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI that generates matching pairs for a study game. Given the following material, extract " +
+        numPairs +
+        " pairs of related terms and definitions (or Q/A). Respond ONLY with a valid JSON array: [{\"term\": \"\", \"definition\": \"\"}, ...] and nothing else.",
+      "Material:",
+      text,
+    ].join("\n");
+
+    let pairs: { term: string; definition: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      // Try to parse JSON from response
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        pairs = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate matching pairs: " + (err as Error).message);
+    }
+    return { pairs };
+  }
+
+  // Dynamic Learning Path Generator
+  async generateLearningPath(
+    userId: string,
+    performanceData: {
+      quizResults: any[];
+      notes: string[];
+      completedLessons: string[];
+    }
+  ): Promise<{ learningPath: { id: string; title: string; description: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI educational advisor. Given the following student data, recommend a personalized learning path for maximum retention and improvement.",
+      "Student Data:",
+      `Quiz Results: ${JSON.stringify(performanceData.quizResults)}`,
+      `Notes: ${performanceData.notes.join('\n')}`,
+      `Completed Lessons: ${JSON.stringify(performanceData.completedLessons)}`,
+      "Respond ONLY with a valid JSON array: [{\"id\": \"lesson_or_topic_id\", \"title\": \"Lesson/Topic Title\", \"description\": \"Why this is recommended\"}, ...] and nothing else.",
+    ].join("\n");
+
+    let learningPath: { id: string; title: string; description: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        learningPath = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate learning path: " + (err as Error).message);
+    }
+    return { learningPath };
+  }
+
+  // Smart Quiz Generator
+  async generateSmartQuiz(
+    userId: string,
+    notes: string[],
+    quizHistory: any[],
+    numQuestions: number = 5
+  ): Promise<{ quiz: { question: string; options: string[]; answer: string; explanation?: string }[] }> {
+    // Prepare prompt for OpenAI
+    const prompt = [
+      "You are an AI quiz generator. Given the student's notes and quiz history, generate a quiz targeting their weak areas.",
+      "Student Notes:",
+      notes.join('\n'),
+      "Quiz History:",
+      JSON.stringify(quizHistory),
+      `Generate ${numQuestions} multiple-choice questions. Each question should have 4 options, the correct answer, and a brief explanation.`,
+      "Respond ONLY with a valid JSON array: [{\"question\": \"\", \"options\": [\"\", \"\", \"\", \"\"], \"answer\": \"\", \"explanation\": \"\"}, ...] and nothing else."
+    ].join("\n");
+
+    let quiz: { question: string; options: string[]; answer: string; explanation?: string }[] = [];
+    try {
+      const aiResponse = await this.callAzureOpenAI(prompt);
+      const match = aiResponse.match(/\[.*\]/s);
+      if (match) {
+        quiz = JSON.parse(match[0]);
+      } else {
+        throw new Error("AI response did not contain a valid JSON array.");
+      }
+    } catch (err) {
+      throw new Error("Failed to generate smart quiz: " + (err as Error).message);
+    }
+    return { quiz };
+  }
+
   // Helper: Call Azure OpenAI API
   private async callAzureOpenAI(prompt: string): Promise<string> {
-    const endpoint = process.env.AZURE_API_BASE!;
+    const base = process.env.AZURE_API_BASE!;
+    const deployment = process.env.AZURE_API_MODEL!;
+    const apiVersion = process.env.AZURE_API_VERSION!;
     const apiKey = process.env.AZURE_API_KEY!;
+
+    const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
     const response = await axios.post(
       endpoint,
