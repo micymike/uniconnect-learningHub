@@ -21,7 +21,7 @@ export class ChatController {
 
   @Post('messages')
   async sendMessage(@Request() req, @Body() dto: SendMessageDto) {
-    return this.chatService.sendMessage(req.user.id, dto);
+    return this.chatService.sendMessage(req.user.userId, dto);
   }
 
   @Get('messages/:otherUserId')
@@ -30,7 +30,7 @@ export class ChatController {
     @Param('otherUserId') otherUserId: string,
     @Query('limit') limit?: number,
   ) {
-    return this.chatService.getMessages(req.user.id, otherUserId, limit);
+    return this.chatService.getMessages(req.user.userId, otherUserId, limit);
   }
 
   @Put('messages/:messageId')
@@ -39,27 +39,27 @@ export class ChatController {
     @Param('messageId') messageId: string,
     @Body() dto: EditMessageDto,
   ) {
-    return this.chatService.editMessage(messageId, req.user.id, dto);
+    return this.chatService.editMessage(messageId, req.user.userId, dto);
   }
 
   @Delete('messages/:messageId')
   async deleteMessage(@Request() req, @Param('messageId') messageId: string) {
-    return this.chatService.deleteMessage(messageId, req.user.id);
+    return this.chatService.deleteMessage(messageId, req.user.userId);
   }
 
   @Post('study-mates')
   async addStudyMate(@Request() req, @Body() dto: AddStudyMateDto) {
-    return this.chatService.addStudyMate(req.user.id, dto);
+    return this.chatService.addStudyMate(req.user.userId, dto);
   }
 
   @Get('study-mates')
   async getStudyMates(@Request() req) {
-    return this.chatService.getStudyMates(req.user.id);
+    return this.chatService.getStudyMates(req.user.userId);
   }
 
   @Get('search-users')
   async searchOnlineUsers(@Request() req, @Query('q') query: string) {
-    return this.chatService.searchOnlineUsers(req.user.id, query);
+    return this.chatService.searchOnlineUsers(req.user.userId, query);
   }
 
   @Get('available-users')
@@ -73,7 +73,7 @@ export class ChatController {
     @Body() body: { isOnline: boolean; isTyping?: boolean; typingTo?: string },
   ) {
     return this.chatService.updateUserStatus(
-      req.user.id,
+      req.user.userId,
       body.isOnline,
       body.isTyping,
       body.typingTo,

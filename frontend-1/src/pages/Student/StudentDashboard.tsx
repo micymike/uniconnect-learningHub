@@ -247,7 +247,8 @@ export default function StudentDashboard() {
             { label: "Study Buddy", icon: "bx bx-message-dots", path: "/student/chatbot" },
             { label: "Flashcards", icon: "bx bx-collection", path: "/student/flashcards" },
             { label: "My Notes", icon: "bx bx-notepad", path: "/student/mynotes" },
-            { label: "Smart Quiz", icon: "bx bx-brain", path: "/student/smartquiz" }
+            { label: "Smart Quiz", icon: "bx bx-brain", path: "/student/smartquiz" },
+            { label: "Find Study Partner", icon: "bx bx-user-plus", path: "/student/find-partner" }
           ].map((action, index) => (
             <button
               key={action.label}

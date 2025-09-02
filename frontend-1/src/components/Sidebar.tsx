@@ -14,6 +14,8 @@ const aiTools = [
   { label: "Flashcards", path: "/student/flashcards", icon: "bx bx-collection" },
   { label: "Task Scheduler", path: "/student/task-scheduler", icon: "bx bx-calendar-check" },
   { label: "My Notes", path: "/student/mynotes", icon: "bx bx-notepad" },
+  { label: "Find Study Partner", path: "/student/find-partner", icon: "bx bx-user-plus" },
+  { label: "Study Space", path: "/student/study-space", icon: "bx bx-group" },
 ];
 
 
