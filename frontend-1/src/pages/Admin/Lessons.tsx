@@ -47,7 +47,7 @@ const LessonsPage: React.FC = () => {
       setIsLoading(true);
       const response = await fetch(`${API_URL}/lessons`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -104,7 +104,7 @@ const LessonsPage: React.FC = () => {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           ...formData,
@@ -165,7 +165,7 @@ const handleDelete = async (id: string) => {
       const response = await fetch(`${API_URL}/lessons/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
