@@ -194,6 +194,24 @@ Return only the JSON array, no other text.`;
     }));
   }
 
+  async updateSchedule(userId: string, scheduleId: string, schedule: Schedule): Promise<Schedule> {
+    const { data, error } = await this.supabase
+      .from('task_schedules')
+      .update({
+        title: schedule.title,
+        tasks: schedule.tasks,
+        total_duration: schedule.tasks.reduce((sum, task) => sum + task.estimatedDuration, 0),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', scheduleId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return schedule;
+  }
+
   async deleteSchedule(userId: string, scheduleId: string): Promise<void> {
     const { error } = await this.supabase
       .from('task_schedules')
@@ -305,26 +323,26 @@ Return only the JSON array, no other text.`;
   }
 
   private async callAzureOpenAI(prompt: string): Promise<string> {
-    const endpoint = process.env.AZURE_API_BASE!;
-    const apiKey = process.env.AZURE_API_KEY!;
+const endpoint = `${process.env.AZURE_API_BASE}/openai/deployments/${process.env.AZURE_API_MODEL}/chat/completions?api-version=${process.env.AZURE_API_VERSION}`;
+const apiKey = process.env.AZURE_API_KEY!;
 
-    const response = await axios.post(
-      endpoint,
-      {
-        messages: [
-          { role: 'system', content: 'You are an AI task scheduler that helps students organize their daily routines efficiently.' },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      },
-      {
-        headers: {
-          'api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    return response.data.choices[0].message.content.trim();
+const response = await axios.post(
+  endpoint,
+  {
+    messages: [
+      { role: 'system', content: 'You are an AI task scheduler that helps students organize their daily routines efficiently.' },
+      { role: 'user', content: prompt }
+    ],
+    max_tokens: 1000,
+    temperature: 0.3,
+  },
+  {
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+  }
+);
+return response.data.choices[0].message.content.trim();
   }
 }
