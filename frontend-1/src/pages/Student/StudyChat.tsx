@@ -61,6 +61,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [toast, setToast] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -407,7 +408,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-row relative">
       {toast && (
         <Toast
           type={toast.type}
@@ -416,12 +417,43 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
         />
       )}
 
+      {/* Sidebar toggle button for mobile */}
+      <button
+        className="fixed bottom-6 right-6 z-30 bg-orange-500 text-white rounded-full p-4 shadow-lg sm:hidden"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open Study Partners"
+      >
+        <i className="bx bx-group text-2xl"></i>
+      </button>
+
       {/* Chat Area */}
-      <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col h-full w-full relative">
         {selectedMate ? (
           <>
+            {/* Chat Header - Sticky at top */}
+            <div className="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 left-0 right-0 z-20">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-400 flex items-center justify-center text-black font-bold">
+                  {selectedMate.user.user_metadata.full_name
+                    ? selectedMate.user.user_metadata.full_name[0].toUpperCase()
+                    : selectedMate.user.email[0].toUpperCase()}
+                </div>
+                <div className="flex flex-col">
+                  <h2 className="text-white font-semibold text-lg">
+                    {selectedMate.user.user_metadata.full_name || selectedMate.user.email}
+                  </h2>
+                  <span className={`text-sm ${
+                    selectedMate.is_online ? 'text-green-400' : 'text-gray-400'
+                  }`}>
+                    {selectedMate.is_online ? 'Online' : 'Offline'}
+                    {typingUsers.has(selectedMate.user.id) && ' • typing...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Messages Area */}
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 min-h-0 p-4 space-y-4 overflow-y-auto overflow-x-hidden">
               {messagesLoading ? (
                 <div className="text-center text-gray-400 mt-8">
                   <p>Loading messages...</p>
@@ -504,7 +536,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
             </div>
 
             {/* Message Input - Sticky at bottom */}
-            <div className="bg-gray-800 border-t border-gray-700 p-3 sm:p-4 sticky bottom-0 z-10">
+            <div className="bg-gray-800 border-t border-gray-700 p-3 sm:p-4 sticky bottom-0 left-0 right-0 z-10">
               <div className="flex space-x-2 sm:space-x-3">
                 <input
                   type="text"
@@ -536,6 +568,101 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
           </div>
         )}
       </div>
+      {/* Sidebar - Study Partners (Right Side) */}
+      {/* Desktop/Tablet Sidebar */}
+      <div className="hidden sm:flex w-64 h-full bg-gray-900 border-l border-gray-800 flex-col items-center py-4 overflow-y-auto">
+        <h3 className="text-white text-lg font-bold mb-4">Study Partners</h3>
+        <div className="flex-1 w-full">
+          {studyMates.length === 0 ? (
+            <div className="text-gray-400 text-center mt-8">No study partners</div>
+          ) : (
+            <ul className="space-y-2 w-full">
+              {studyMates.map((mate) => (
+                <li
+                  key={mate.id}
+                  className={`flex items-center px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                    selectedMate?.id === mate.id
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-800 text-white hover:bg-gray-700"
+                  }`}
+                  onClick={() => selectMate(mate)}
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center text-black font-bold mr-2">
+                    {mate.user.user_metadata.full_name
+                      ? mate.user.user_metadata.full_name[0].toUpperCase()
+                      : mate.user.email[0].toUpperCase()}
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <span className="font-semibold text-sm truncate">
+                      {mate.user.user_metadata.full_name ||
+                        mate.user.email}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {mate.is_online ? "Online" : "Offline"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      {/* Mobile Sidebar Drawer */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 flex">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-40"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <div className="relative ml-auto w-64 h-full bg-gray-900 border-l border-gray-800 flex flex-col items-center py-4 overflow-y-auto z-50">
+            <button
+              className="absolute top-2 right-2 text-white text-2xl"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close"
+            >
+              <i className="bx bx-x"></i>
+            </button>
+            <h3 className="text-white text-lg font-bold mb-4 mt-6">Study Partners</h3>
+            <div className="flex-1 w-full">
+              {studyMates.length === 0 ? (
+                <div className="text-gray-400 text-center mt-8">No study partners</div>
+              ) : (
+                <ul className="space-y-2 w-full">
+                  {studyMates.map((mate) => (
+                    <li
+                      key={mate.id}
+                      className={`flex items-center px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                        selectedMate?.id === mate.id
+                          ? "bg-orange-500 text-white"
+                          : "bg-gray-800 text-white hover:bg-gray-700"
+                      }`}
+                      onClick={() => {
+                        selectMate(mate);
+                        setSidebarOpen(false);
+                      }}
+                    >
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center text-black font-bold mr-2">
+                        {mate.user.user_metadata.full_name
+                          ? mate.user.user_metadata.full_name[0].toUpperCase()
+                          : mate.user.email[0].toUpperCase()}
+                      </div>
+                      <div className="flex flex-col flex-1">
+                        <span className="font-semibold text-sm truncate">
+                          {mate.user.user_metadata.full_name ||
+                            mate.user.email}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {mate.is_online ? "Online" : "Offline"}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -78,17 +78,18 @@ export default function StudentDashboard() {
     fetchLearningPath();
   }, []);
 
+  // Real stats: Only total courses is available, others are N/A or coming soon
   const stats = [
     { label: "Total Courses", value: courses.length, icon: "bx bx-book", color: "text-orange-500" },
-    { label: "Completed", value: Math.floor(courses.length * 0.3), icon: "bx bx-check-circle", color: "text-green-500" },
-    { label: "In Progress", value: Math.floor(courses.length * 0.5), icon: "bx bx-time", color: "text-blue-500" },
-    { label: "Certificates", value: Math.floor(courses.length * 0.2), icon: "bx bx-award", color: "text-purple-500" }
+    { label: "Completed", value: "N/A", icon: "bx bx-check-circle", color: "text-green-500" },
+    { label: "In Progress", value: "N/A", icon: "bx bx-time", color: "text-blue-500" },
+    { label: "Certificates", value: "Coming Soon", icon: "bx bx-award", color: "text-purple-500" }
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-black via-gray-900 to-gray-800 px-4 py-6">
+    <div className="min-h-screen h-screen w-full w-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 px-2 py-2 sm:px-4 sm:py-6 overflow-x-hidden">
       {/* Welcome Section */}
-      <div className="mb-8 animate-fade-in-up">
+      <div className="mb-8 animate-fade-in-up w-full">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           Welcome back, <span className="text-orange-500">{fullName.split(' ')[0]}</span>! 👋
         </h1>
@@ -96,7 +97,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Learning Path Section */}
-      <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-orange-500 animate-fade-in-up animation-delay-200">
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 mb-8 border border-orange-500 animate-fade-in-up animation-delay-200 w-full">
         <h2 className="text-xl font-bold text-orange-400 mb-4 flex items-center">
           <i className="bx bx-map text-orange-400 mr-2"></i>
           Your AI Learning Path
@@ -120,7 +121,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-8 w-full">
         {stats.map((stat, index) => (
           <div
             key={stat.label}
@@ -137,7 +138,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Progress Overview */}
-      <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700 animate-fade-in-up animation-delay-300">
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 mb-8 border border-gray-700 animate-fade-in-up animation-delay-300 w-full">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center">
           <i className="bx bx-trending-up text-orange-500 mr-2"></i>
           Learning Progress
@@ -146,23 +147,23 @@ export default function StudentDashboard() {
           <div>
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-400">Overall Progress</span>
-              <span className="text-orange-500 font-semibold">68%</span>
+              <span className="text-orange-500 font-semibold">N/A</span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
-              <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full animate-pulse" style={{ width: '68%' }}></div>
+              <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full animate-pulse" style={{ width: '0%' }}></div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-500">12</div>
+              <div className="text-2xl font-bold text-green-500">N/A</div>
               <div className="text-gray-400 text-sm">Hours This Week</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-500">5</div>
+              <div className="text-2xl font-bold text-blue-500">N/A</div>
               <div className="text-gray-400 text-sm">Streak Days</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-500">850</div>
+              <div className="text-2xl font-bold text-purple-500">Coming Soon</div>
               <div className="text-gray-400 text-sm">XP Points</div>
             </div>
           </div>
@@ -170,7 +171,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Available Courses */}
-      <div className="animate-fade-in-up animation-delay-600">
+      <div className="animate-fade-in-up animation-delay-600 w-full">
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
           <i className="bx bx-library text-orange-500 mr-2"></i>
           Available Courses
@@ -192,7 +193,7 @@ export default function StudentDashboard() {
             No courses available at the moment.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full">
             {courses.map((course, index) => (
               <div
                 key={course._id}
@@ -237,12 +238,12 @@ export default function StudentDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-8 animate-fade-in-up animation-delay-900">
+      <div className="mt-8 animate-fade-in-up animation-delay-900 w-full">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center">
           <i className="bx bx-zap text-orange-500 mr-2"></i>
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 w-full">
           {[
             { label: "Study Buddy", icon: "bx bx-message-dots", path: "/student/chatbot" },
             { label: "Flashcards", icon: "bx bx-collection", path: "/student/flashcards" },
