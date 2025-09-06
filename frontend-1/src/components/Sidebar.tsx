@@ -49,7 +49,7 @@ export default function Sidebar() {
     <>
       {/* Mobile Hamburger */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 bg-gray-900 hover:bg-gray-800 text-orange-400 p-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110"
+        className="lg:hidden fixed top-4 right-4 z-50 bg-gray-900 hover:bg-gray-800 text-orange-400 p-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110"
         onClick={() => setOpen(!open)}
         aria-label="Toggle sidebar"
       >
@@ -58,8 +58,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white fixed top-0 left-0 h-full w-72 z-40 flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out
-          ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:fixed lg:h-screen border-r border-gray-800`}
+        className={`bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white fixed top-0 right-0 h-full w-72 z-40 flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out
+          ${open ? "translate-x-0" : "translate-x-full"} lg:left-0 lg:right-auto lg:translate-x-0 lg:fixed lg:h-screen border-l border-gray-800`}
       >
         {/* Header */}
         <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-orange-500 to-orange-600">
