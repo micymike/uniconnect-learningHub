@@ -16,8 +16,37 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
   });
 }
 
-export function showNotification(title: string, options?: NotificationOptions): Notification | null {
-  if ("Notification" in window && Notification.permission === "granted") {
+const notificationSoundBase64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="; // Short beep
+
+function playNotificationSound() {
+  try {
+    const audio = new window.Audio(notificationSoundBase64);
+    audio.play();
+  } catch (e) {
+    // Fallback: ignore sound error
+  }
+}
+
+import toast from "./Toast";
+
+export async function showNotification(title: string, options?: NotificationOptions): Promise<Notification | null> {
+  // Debug log
+  console.log("[Notification] Attempting to show:", title, options);
+
+  if ("Notification" in window) {
+    if (Notification.permission !== "granted") {
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") {
+          toast({ message: title + (options?.body ? ": " + options.body : ""), onClose: () => {} });
+          return null;
+        }
+      } catch {
+        toast({ message: title + (options?.body ? ": " + options.body : ""), onClose: () => {} });
+        return null;
+      }
+    }
+    playNotificationSound();
     const notification = new Notification(title, {
       icon: "/logo.png",
       badge: "/logo.png",
@@ -26,18 +55,39 @@ export function showNotification(title: string, options?: NotificationOptions): 
       silent: false,
       ...options
     });
-    
+
     // Auto-close after 5 seconds if not requiring interaction
     if (!options?.requireInteraction) {
       setTimeout(() => notification.close(), 5000);
     }
-    
+
+    // If service worker is registered, also show push notification
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "show-notification",
+        title,
+        options: {
+          icon: "/logo.png",
+          badge: "/logo.png",
+          ...options
+        }
+      });
+    }
+
     return notification;
   }
+  // Fallback: show toast
+  toast({ message: title + (options?.body ? ": " + options.body : ""), onClose: () => {} });
   return null;
 }
 
-export function showStudentNotification(type: 'assignment' | 'study_session' | 'achievement' | 'message' | 'reminder', data: any) {
+export async function showStudentNotification(
+  type: 'assignment' | 'study_session' | 'achievement' | 'message' | 'reminder',
+  data: any
+) {
+  // Debug log
+  console.log("[Notification] showStudentNotification:", type, data);
+
   const notifications = {
     assignment: {
       title: `📚 Assignment: ${data.title}`,
@@ -53,7 +103,7 @@ export function showStudentNotification(type: 'assignment' | 'study_session' | '
     },
     achievement: {
       title: `🏆 Achievement Unlocked!`,
-      body: data.message || 'You\'ve reached a new milestone. Great work!',
+      body: data.message || "You've reached a new milestone. Great work!",
       requireInteraction: false,
       tag: 'achievement'
     },
@@ -70,15 +120,17 @@ export function showStudentNotification(type: 'assignment' | 'study_session' | '
       tag: 'reminder'
     }
   };
-  
+
   const config = notifications[type];
   if (config) {
-    return showNotification(config.title, {
+    // Only pass actions to service worker, not Notification API
+    const { actions, ...notificationOptions } = {
       body: config.body,
       requireInteraction: config.requireInteraction,
       tag: config.tag,
-      actions: data.actions || []
-    });
+      ...data
+    };
+    return await showNotification(config.title, notificationOptions);
   }
   return null;
 }
