@@ -25,15 +25,44 @@ export class UsersController {
     return { users, page, limit };
   }
 
+  // New: Send study partner request
   @UseGuards(JwtAuthGuard)
-  @Post('add-partner')
-  async addStudyPartner(@Req() req, @Body('partnerId') partnerId: string) {
-    const userId = req.user?.userId || req.user?.id;
-    if (!userId || !partnerId) {
-      throw new HttpException('Missing user or partner id', HttpStatus.BAD_REQUEST);
+  @Post('request-partner')
+  async requestStudyPartner(@Req() req, @Body('recipientId') recipientId: string) {
+    const requesterId = req.user?.userId || req.user?.id;
+    if (!requesterId || !recipientId) {
+      throw new HttpException('Missing user or recipient id', HttpStatus.BAD_REQUEST);
     }
-    const result = await this.usersService.addStudyPartner(userId, partnerId);
-    return { success: true, studyPartner: result };
+    const result = await this.usersService.createStudyPartnerRequest(requesterId, recipientId);
+    return { success: true, request: result };
+  }
+
+  // New: List incoming study partner requests
+  @UseGuards(JwtAuthGuard)
+  @Get('partner-requests')
+  async getPartnerRequests(@Req() req) {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+    const requests = await this.usersService.getIncomingPartnerRequests(userId);
+    return { requests };
+  }
+
+  // New: Respond to a study partner request (accept/decline)
+  @UseGuards(JwtAuthGuard)
+  @Post('respond-partner-request')
+  async respondPartnerRequest(
+    @Req() req,
+    @Body('requestId') requestId: string,
+    @Body('action') action: 'accept' | 'decline'
+  ) {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId || !requestId || !action) {
+      throw new HttpException('Missing parameters', HttpStatus.BAD_REQUEST);
+    }
+    const result = await this.usersService.respondToPartnerRequest(userId, requestId, action);
+    return { success: true, result };
   }
 
   @UseGuards(JwtAuthGuard)

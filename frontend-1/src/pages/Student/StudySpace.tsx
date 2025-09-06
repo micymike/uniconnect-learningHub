@@ -27,19 +27,42 @@ const StudySpace: React.FC = () => {
     fetchAvailableUsers();
   }, []);
 
+  // Refresh partners when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchStudyPartners();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const fetchStudyPartners = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/users/study-partners`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
-      setPartners(data.partners || []);
-      if (data.partners?.length > 0) {
-        setSelectedPartner(data.partners[0]);
+      console.log('Study partners response:', data);
+      
+      // The backend returns partners in the correct format
+      const partners = data.partners || [];
+      setPartners(partners);
+      
+      if (partners.length > 0) {
+        setSelectedPartner(partners[0]);
       }
     } catch (error) {
       console.error('Error fetching study partners:', error);
+      setPartners([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -112,6 +135,8 @@ const StudySpace: React.FC = () => {
       </div>
     );
   }
+
+
 
   return (
     <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col lg:flex-row">
