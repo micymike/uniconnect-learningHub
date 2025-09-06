@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { useSocket } from '../../hooks/useSocket';
 import Toast from '../../components/Toast';
+import { fetchWithAuth } from '../../lib/utils';
+import ReactMarkdown from 'react-markdown';
 import 'boxicons/css/boxicons.min.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-backend.onrender.com/api';
@@ -48,12 +50,14 @@ interface StudyChatProps {
 
 const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const [user, setUser] = useState<any>(null);
+  const [aiIsTyping, setAiIsTyping] = useState(false);
   const { socket, isConnected } = useSocket(user?.id);
   const [studyMates, setStudyMates] = useState<StudyMate[]>([]);
   const [selectedMate, setSelectedMate] = useState<StudyMate | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [showMention, setShowMention] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -77,7 +81,8 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const filteredMessages = selectedMate && user?.id 
     ? messages.filter(message => 
         (message.senderId === user.id && message.receiverId === selectedMate.user.id) ||
-        (message.senderId === selectedMate.user.id && message.receiverId === user.id)
+        (message.senderId === selectedMate.user.id && message.receiverId === user.id) ||
+        (message.senderId === 'ai' && message.receiverId === selectedMate.user.id)
       )
     : [];
 
@@ -86,12 +91,14 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
 
     socket.on('newMessage', (message: Message) => {
       // Only add the message if it is for the currently selected conversation
+      // Include AI messages (senderId: 'ai') in the conversation
       if (
         selectedMate &&
         user?.id &&
         (
           (message.senderId === user.id && message.receiverId === selectedMate.user.id) ||
-          (message.senderId === selectedMate.user.id && message.receiverId === user.id)
+          (message.senderId === selectedMate.user.id && message.receiverId === user.id) ||
+          (message.senderId === 'ai' && message.receiverId === selectedMate.user.id)
         )
       ) {
         setMessages(prev => {
@@ -191,7 +198,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const loadStudyMates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/users/study-partners`, {
+      const response = await fetchWithAuth(`${API_BASE}/users/study-partners`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -230,7 +237,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
         return;
       }
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/chat/messages/${mateId}`, {
+      const response = await fetchWithAuth(`${API_BASE}/chat/messages/${mateId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) {
@@ -268,7 +275,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!user || !user.id) {
       setToast({ type: 'error', message: 'User not loaded. Please log in again.' });
       return;
@@ -284,8 +291,110 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
     if (!newMessage.trim()) return;
 
     const messageContent = newMessage.trim();
-    
-    // Create temporary message for immediate UI update
+
+    // Detect @studybuddy or @ai tag at the start
+    const aiTagMatch = messageContent.match(/^@(?:studybuddy|ai|assistant)\s+/i);
+    if (aiTagMatch) {
+      // Remove the tag and get the question
+      const question = messageContent.replace(/^@(?:studybuddy|ai|assistant)\s+/i, '').trim();
+      if (!question) {
+        setToast({ type: 'error', message: 'Please enter a question for the AI.' });
+        return;
+      }
+
+      // Show AI typing indicator
+      setAiIsTyping(true);
+
+      setNewMessage('');
+      stopTyping();
+
+      // Add the user's question immediately with a specific timestamp
+      const questionTimestamp = new Date();
+      const userMessage: Message = {
+        id: `temp-user-${Date.now()}`,
+        senderId: user.id,
+        receiverId: selectedMate.user.id,
+        content: `@studybuddy ${question}`,
+        timestamp: questionTimestamp,
+        isEdited: false
+      };
+      setMessages(prev => [...prev, userMessage]);
+
+      try {
+        // Call AI API
+        const token = localStorage.getItem('token');
+        const aiRes = await fetchWithAuth(`${API_BASE}/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ message: question, context: { userId: user.id, partnerId: selectedMate.user.id } })
+        });
+        
+        let aiAnswer = 'Sorry, I could not answer that.';
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          aiAnswer = aiData.reply || aiData.answer || aiData.response || aiAnswer;
+        }
+
+        // Add the AI response immediately with timestamp after question
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          senderId: 'ai',
+          receiverId: selectedMate.user.id,
+          content: aiAnswer,
+          timestamp: new Date(questionTimestamp.getTime() + 1000), // 1 second after question
+          isEdited: false
+        };
+        setMessages(prev => [...prev, aiMessage]);
+
+        // Save both messages to database
+        await saveMessageToDB({
+          senderId: user.id,
+          receiverId: selectedMate.user.id,
+          content: `@studybuddy ${question}`,
+          timestamp: questionTimestamp,
+          isEdited: false
+        });
+        await saveMessageToDB({
+          senderId: 'ai',
+          receiverId: selectedMate.user.id,
+          content: aiAnswer,
+          timestamp: new Date(questionTimestamp.getTime() + 1000),
+          isEdited: false
+        });
+
+        // Also emit to socket for other participants
+        socket.emit('sendMessage', {
+          senderId: user.id,
+          receiverId: selectedMate.user.id,
+          content: `@studybuddy ${question}`
+        });
+        socket.emit('sendMessage', {
+          senderId: 'ai',
+          receiverId: selectedMate.user.id,
+          content: aiAnswer
+        });
+      } catch (err) {
+        // Add error message as AI response
+        const errorMessage: Message = {
+          id: `ai-error-${Date.now()}`,
+          senderId: 'ai',
+          receiverId: selectedMate.user.id,
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date(questionTimestamp.getTime() + 1000), // 1 second after question
+          isEdited: false
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setToast({ type: 'error', message: 'Failed to get AI response.' });
+      } finally {
+        setAiIsTyping(false);
+      }
+      return;
+    }
+
+    // Normal message flow
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
       senderId: user.id,
@@ -294,12 +403,9 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
       timestamp: new Date(),
       isEdited: false
     };
-    
-    // Add message to UI immediately
+
     setMessages(prev => [...prev, tempMessage]);
-    
-    // Send to server
-    console.log('Sending message:', { senderId: user.id, receiverId: selectedMate.user.id, content: messageContent });
+
     socket.emit('sendMessage', {
       senderId: user.id,
       receiverId: selectedMate.user.id,
@@ -347,7 +453,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/chat/search-users?q=${searchQuery}`, {
+      const response = await fetchWithAuth(`${API_BASE}/chat/search-users?q=${searchQuery}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -360,7 +466,7 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
   const addStudyMate = async (userId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/chat/study-mates`, {
+      await fetchWithAuth(`${API_BASE}/chat/study-mates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -426,6 +532,62 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const saveMessageToDB = async (message: Omit<Message, 'id'>) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetchWithAuth(`${API_BASE}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          content: message.content,
+          timestamp: message.timestamp.toISOString()
+        })
+      });
+    } catch (error) {
+      console.error('Error saving message to database:', error);
+    }
+  };
+
+  // Helper: Group AI Q&A pairs
+  const groupMessagesForDisplay = (messages: Message[]) => {
+    const result: Array<{ question?: Message; ai?: Message; normal?: Message }> = [];
+    let i = 0;
+    while (i < messages.length) {
+      const msg = messages[i];
+      // Detect AI Q&A pair
+      if (
+        msg.senderId === user?.id &&
+        msg.content.startsWith('@studybuddy')
+      ) {
+        // Look ahead for AI response
+        const aiMsg = messages[i + 1];
+        if (aiMsg && aiMsg.senderId === 'ai') {
+          result.push({ question: msg, ai: aiMsg });
+          i += 2;
+          continue;
+        }
+        result.push({ question: msg });
+        i += 1;
+        continue;
+      }
+      // AI message not paired, show as normal
+      if (msg.senderId === 'ai') {
+        result.push({ ai: msg });
+        i += 1;
+        continue;
+      }
+      // Normal message
+      result.push({ normal: msg });
+      i += 1;
+    }
+    return result;
+  };
+
   return (
     <div className="h-full bg-gradient-to-br from-black via-gray-900 to-gray-800 flex flex-col">
       {toast && (
@@ -450,60 +612,30 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
               </div>
             ) : (
               <>
-                {filteredMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg break-words ${
-                      message.senderId === user?.id
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-700 text-white'
-                    }`}>
-                      {editingMessage === message.id ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                            className="w-full bg-transparent border-b border-gray-300 focus:outline-none"
-                            onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
-                          />
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={saveEdit}
-                              className="text-xs bg-green-500 px-2 py-1 rounded"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setEditingMessage(null)}
-                              className="text-xs bg-gray-500 px-2 py-1 rounded"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p>{message.content}</p>
+                {groupMessagesForDisplay(filteredMessages).map((item, idx) => (
+                  <React.Fragment key={item.question?.id || item.ai?.id || item.normal?.id || idx}>
+                    {/* AI Q&A Pair */}
+                    {item.question && (
+                      <div className="flex justify-end">
+                        <div className="max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg break-words bg-orange-500 text-white">
+                          <p>{item.question.content}</p>
                           <div className="flex items-center justify-between mt-1">
                             <span className="text-xs opacity-70">
-                              {formatTime(message.timestamp)}
-                              {message.isEdited && ' (edited)'}
+                              {formatTime(item.question.timestamp)}
+                              {item.question.isEdited && ' (edited)'}
                             </span>
-                            {message.senderId === user?.id && (
+                            {item.question.senderId === user?.id && (
                               <div className="flex space-x-1">
-                                {canEditMessage(message) && (
+                                {canEditMessage(item.question) && (
                                   <button
-                                    onClick={() => editMessage(message.id, message.content)}
+                                    onClick={() => editMessage(item.question!.id, item.question!.content)}
                                     className="text-xs opacity-70 hover:opacity-100"
                                   >
                                     <i className="bx bx-edit"></i>
                                   </button>
                                 )}
                                 <button
-                                  onClick={() => deleteMessage(message.id)}
+                                  onClick={() => deleteMessage(item.question!.id)}
                                   className="text-xs opacity-70 hover:opacity-100"
                                 >
                                   <i className="bx bx-trash"></i>
@@ -511,11 +643,102 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
                               </div>
                             )}
                           </div>
-                        </>
-                      )}
+                        </div>
+                      </div>
+                    )}
+                    {item.ai && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg break-words bg-blue-600 text-white border-l-4 border-blue-400">
+                          <div className="flex items-center mb-2">
+                            <i className="bx bx-bot text-blue-300 mr-1"></i>
+                            <span className="text-xs font-semibold text-blue-300">StudyBuddy AI</span>
+                          </div>
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown>{item.ai.content}</ReactMarkdown>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs opacity-70">
+                              {formatTime(item.ai.timestamp)}
+                              {item.ai.isEdited && ' (edited)'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Normal message */}
+                    {item.normal && (
+                      <div className={`flex ${item.normal.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg break-words ${
+                          item.normal.senderId === user?.id
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-700 text-white'
+                        }`}>
+                          {editingMessage === item.normal.id ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full bg-transparent border-b border-gray-300 focus:outline-none"
+                                onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
+                              />
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={saveEdit}
+                                  className="text-xs bg-green-500 px-2 py-1 rounded"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingMessage(null)}
+                                  className="text-xs bg-gray-500 px-2 py-1 rounded"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p>{item.normal.content}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs opacity-70">
+                                  {formatTime(item.normal.timestamp)}
+                                  {item.normal.isEdited && ' (edited)'}
+                                </span>
+                                {item.normal.senderId === user?.id && (
+                                  <div className="flex space-x-1">
+                                    {canEditMessage(item.normal) && (
+                                      <button
+                                        onClick={() => editMessage(item.normal!.id, item.normal!.content)}
+                                        className="text-xs opacity-70 hover:opacity-100"
+                                      >
+                                        <i className="bx bx-edit"></i>
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => deleteMessage(item.normal!.id)}
+                                      className="text-xs opacity-70 hover:opacity-100"
+                                    >
+                                      <i className="bx bx-trash"></i>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+                {aiIsTyping && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md px-3 py-2 rounded-lg bg-gray-700 text-white flex items-center space-x-2">
+                      <span className="font-bold text-orange-400">@studybuddy</span>
+                      <span className="animate-pulse">AI is typing...</span>
                     </div>
                   </div>
-                ))}
+                )}
                 <div ref={messagesEndRef} />
               </>
             )}
@@ -524,17 +747,66 @@ const StudyChat: React.FC<StudyChatProps> = ({ partnerId }) => {
           {/* Message Input */}
           <div className="bg-gray-800 border-t border-gray-700 p-3 sm:p-4">
             <div className="flex space-x-2 sm:space-x-3">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  handleTyping();
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 bg-gray-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                    // Show mention if "@" is typed at start or after space
+                    const val = e.target.value;
+                    const cursor = e.target.selectionStart || 0;
+                    if (
+                      val[cursor - 1] === '@' &&
+                      (cursor === 1 || val[cursor - 2] === ' ')
+                    ) {
+                      setShowMention(true);
+                    } else if (!val.includes('@')) {
+                      setShowMention(false);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (showMention && (e.key === 'Enter' || e.key === 'Tab')) {
+                      e.preventDefault();
+                      setNewMessage(prev => prev.replace(/@$/, '@studybuddy '));
+                      setShowMention(false);
+                    } else if (e.key === 'Escape') {
+                      setShowMention(false);
+                    }
+                  }}
+                  onBlur={() => setTimeout(() => setShowMention(false), 100)}
+                  onFocus={e => {
+                    // Show mention if "@" is present at cursor
+                    const val = e.target.value;
+                    const cursor = e.target.selectionStart || 0;
+                    if (
+                      val[cursor - 1] === '@' &&
+                      (cursor === 1 || val[cursor - 2] === ' ')
+                    ) {
+                      setShowMention(true);
+                    }
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder="Type a message..."
+                  className="w-full max-w-2xl bg-gray-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
+                />
+                {showMention && (
+                  <div className="absolute left-0 bottom-full mb-1 z-50 bg-gray-800 border border-orange-400 rounded shadow-lg w-56">
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-2 hover:bg-orange-500 hover:text-white text-orange-400 font-semibold rounded transition-colors"
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        setNewMessage(prev => prev.replace(/@$/, '@studybuddy '));
+                        setShowMention(false);
+                      }}
+                    >
+                      <span className="font-bold">@studybuddy</span> <span className="text-xs text-gray-300">Ask the AI assistant</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim()}
