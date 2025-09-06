@@ -28,6 +28,8 @@ import NotificationPage from './pages/Student/NotificationPage';
 
 import { useSocket } from './hooks/useSocket';
 import { useStudentNotifications, requestNotificationPermission } from './components/ChatNotification';
+import { initializeMobile } from './mobile';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -152,8 +154,9 @@ function App() {
     }
   }, []);
 
-  // Always request notification permission on app load
+  // Initialize mobile features and request notification permission
   useEffect(() => {
+    initializeMobile();
     requestNotificationPermission();
   }, []);
 
@@ -161,7 +164,9 @@ function App() {
   useStudentNotifications(socket, userId || "");
 
   return (
-    <Router>
+    <>
+      <PWAInstallPrompt />
+      <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/courses" element={<Courses />} />
@@ -212,7 +217,8 @@ function App() {
           <Route path="notifications" element={<NotificationPage />} />
         </Route>
       </Routes>
-    </Router>
+      </Router>
+    </>
   );
 }
 
