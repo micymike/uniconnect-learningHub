@@ -155,16 +155,24 @@ const StudySpace: React.FC = () => {
               className={`p-2 sm:p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
                 selectedPartner?.id === partner.id ? 'bg-orange-500' : 'hover:bg-gray-700'
               }`}
+              style={{ pointerEvents: 'auto', userSelect: 'none' }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Select study partner ${partner.full_name}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') selectPartner(partner);
+              }}
             >
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <img
                   src={partner.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner.full_name)}&background=ff6600&color=fff&size=40`}
                   alt={partner.full_name}
                   className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
+                  style={{ pointerEvents: 'none' }}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-white font-medium text-sm sm:text-base truncate">{partner.full_name}</p>
-                  <p className="text-gray-400 text-xs truncate">{partner.email}</p>
+                  <p className="text-white font-medium text-sm sm:text-base truncate" style={{ pointerEvents: 'none' }}>{partner.full_name}</p>
+                  <p className="text-gray-400 text-xs truncate" style={{ pointerEvents: 'auto', userSelect: 'text' }}>{partner.email}</p>
                 </div>
               </div>
             </div>

@@ -26,6 +26,9 @@ import FindStudyPartner from './pages/Student/FindStudyPartner';
 import StudySpace from './pages/Student/StudySpace';
 import NotificationPage from './pages/Student/NotificationPage';
 
+import { useSocket } from './hooks/useSocket';
+import { useStudentNotifications, requestNotificationPermission } from './components/ChatNotification';
+
 interface RequireAuthProps {
   children: JSX.Element;
   requiredRole?: string;
@@ -130,6 +133,33 @@ function RequireAuth({ children, requiredRole }: RequireAuthProps) {
 }
 
 function App() {
+  // Get userId from localStorage (same as RequireAuth)
+  const [userId, setUserId] = useState<string | null>(null);
+  const { socket } = useSocket(userId);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      try {
+        const parsed = JSON.parse(user);
+        setUserId(parsed.id || parsed._id || null);
+      } catch {
+        setUserId(null);
+      }
+    } else {
+      setUserId(null);
+    }
+  }, []);
+
+  // Always request notification permission on app load
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // Global notifications for students
+  useStudentNotifications(socket, userId || "");
+
   return (
     <Router>
       <Routes>
