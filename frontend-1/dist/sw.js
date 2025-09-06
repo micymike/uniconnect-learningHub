@@ -1,5 +1,5 @@
 // Service Worker for Uniconnect PWA
-const CACHE_NAME = 'uniconnect-v1';
+const CACHE_NAME = 'uniconnect-v2';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
