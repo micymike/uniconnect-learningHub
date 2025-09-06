@@ -24,6 +24,7 @@ import MyNotesWithBuddy from './pages/Student/MyNotesWithBuddy';
 import Feedback from './pages/Feedback';
 import FindStudyPartner from './pages/Student/FindStudyPartner';
 import StudySpace from './pages/Student/StudySpace';
+import NotificationPage from './pages/Student/NotificationPage';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -178,6 +179,7 @@ function App() {
           <Route path="mynotes" element={<MyNotesWithBuddy />} />
           <Route path="find-partner" element={<FindStudyPartner />} />
           <Route path="study-space" element={<StudySpace />} />
+          <Route path="notifications" element={<NotificationPage />} />
         </Route>
       </Routes>
     </Router>

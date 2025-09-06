@@ -16,27 +16,62 @@ export default function FindStudyPartner() {
   const [error, setError] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  // Fetch users with pagination
+  const fetchUsers = async (pageNum = 1, append = false) => {
+    if (loading || isFetchingMore) return;
+    if (!hasMore && append) return;
+    if (append) setIsFetchingMore(true);
+    else setLoading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(`${API_URL}/users?page=${pageNum}&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const data = await res.json();
+      const newUsers = data.users || [];
+      if (append) {
+        setUsers((prev) => [...prev, ...newUsers]);
+      } else {
+        setUsers(newUsers);
+      }
+      setHasMore(newUsers.length === 20);
+    } catch (err: any) {
+      setError(err.message || "Failed to load users");
+    } finally {
+      if (append) setIsFetchingMore(false);
+      else setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`${API_URL}/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch users");
-        const data = await res.json();
-        setUsers(data.users || []);
-      } catch (err: any) {
-        setError(err.message || "Failed to load users");
-      } finally {
-        setLoading(false);
+    fetchUsers(1, false);
+    setPage(1);
+    setHasMore(true);
+  }, []);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 &&
+        !loading &&
+        !isFetchingMore &&
+        hasMore
+      ) {
+        const nextPage = page + 1;
+        fetchUsers(nextPage, true);
+        setPage(nextPage);
       }
     };
-    fetchUsers();
-  }, []);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [page, loading, isFetchingMore, hasMore]);
 
   const handleAddPartner = async (partnerId: string) => {
     setAdding(partnerId);
@@ -44,66 +79,56 @@ export default function FindStudyPartner() {
     setError("");
     try {
       const token = localStorage.getItem("token") || "";
-      const res = await fetch(`${API_URL}/users/add-partner`, {
+      const res = await fetch(`${API_URL}/users/request-partner`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ partnerId }),
+        body: JSON.stringify({ recipientId: partnerId }),
       });
       const data = await res.json();
       if (!res.ok) {
         if (
           data.message &&
-          (data.message.toLowerCase().includes("already your study partner") ||
+          (data.message.toLowerCase().includes("pending request already exists") ||
+           data.message.toLowerCase().includes("already your study partner") ||
            data.message.toLowerCase().includes("already exists"))
         ) {
-          setError("This user is already your study partner.");
+          setError("A request is already pending or this user is already your study partner.");
           setSuccess(null);
-          // Remove the user from the list if already a partner
-          setUsers((prev) => prev.filter((u) => u.id !== partnerId));
         } else {
-          setError(data.message || "Failed to add study partner");
+          setError(data.message || "Failed to send request");
           setSuccess(null);
         }
       } else {
         const user = users.find(u => u.id === partnerId);
-        const userName = user?.full_name || user?.email || 'New partner';
-        const funMessages = [
-          `🎉 Awesome! ${userName} is now your study buddy!`,
-          `🚀 Great choice! ${userName} joined your study squad!`,
-          `📚 Perfect match! ${userName} is ready to study with you!`,
-          `✨ Study partnership activated with ${userName}!`,
-          `🎯 Success! ${userName} is now part of your learning journey!`,
-          `🌟 Fantastic! ${userName} is your new study companion!`
-        ];
-        const randomMessage = funMessages[Math.floor(Math.random() * funMessages.length)];
-        setSuccess(randomMessage);
+        const userName = user?.full_name || user?.email || 'User';
+        setSuccess(`Request sent to ${userName}. They will need to accept before you become study partners.`);
         setError("");
-        // Remove the user from the list after successful addition
-        setUsers((prev) => prev.filter((u) => u.id !== partnerId));
+        // Do not remove user from list; wait for acceptance
       }
     } catch (err: any) {
-      if (
-        err.message &&
-        (err.message.toLowerCase().includes("already your study partner") ||
-         err.message.toLowerCase().includes("already exists"))
-      ) {
-        setError("This user is already your study partner.");
-        setSuccess(null);
-        setUsers((prev) => prev.filter((u) => u.id !== partnerId));
-      } else {
-        setError(err.message || "Failed to add study partner");
-        setSuccess(null);
-      }
+      setError(err.message || "Failed to send request");
+      setSuccess(null);
     } finally {
       setAdding(null);
     }
   };
 
+  // Get current user id from localStorage
+  const currentUserId = (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return user.id;
+    } catch {
+      return null;
+    }
+  })();
+
   const filteredUsers = users.filter(
     (u) =>
+      u.id !== currentUserId &&
       (u.full_name || u.email || "")
         .toLowerCase()
         .includes(search.toLowerCase())
@@ -183,7 +208,7 @@ export default function FindStudyPartner() {
                     disabled={adding === user.id}
                     onClick={() => handleAddPartner(user.id)}
                   >
-                    {adding === user.id ? "Adding..." : "Add as Study Partner"}
+                    {adding === user.id ? "Sending..." : "Send Study Partner Request"}
                   </button>
                 </li>
               ))

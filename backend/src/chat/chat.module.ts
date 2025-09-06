@@ -3,9 +3,10 @@ import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import { SupabaseModule } from '../supabase/supabase.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [SupabaseModule, NotificationsModule],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
   exports: [ChatService],

@@ -223,6 +223,22 @@ return data.map(user => ({
     };
   }
 
+  async getUserInfo(userId: string): Promise<{ full_name?: string; email?: string } | null> {
+    try {
+      const { data, error } = await this.adminSupabase
+        .from('user_profiles')
+        .select('full_name, email')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !data) return null;
+      return data;
+    } catch (error) {
+      console.error('Error getting user info:', error);
+      return null;
+    }
+  }
+
   private mapStudyMate(data: any): StudyMate {
     return {
       id: data.id,

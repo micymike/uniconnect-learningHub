@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @WebSocketGateway({
   cors: {
@@ -24,7 +25,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private userSockets = new Map<string, string>();
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private notificationsGateway: NotificationsGateway
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
@@ -68,6 +72,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const receiverSocketId = this.userSockets.get(data.receiverId);
       if (receiverSocketId) {
         this.server.to(receiverSocketId).emit('newMessage', message);
+      } else {
+        // Send notification if receiver is offline
+        try {
+          const senderInfo = await this.chatService.getUserInfo(data.senderId);
+          await this.notificationsGateway.sendMessageNotification(
+            data.receiverId,
+            senderInfo?.full_name || senderInfo?.email || 'Someone',
+            data.content
+          );
+        } catch (error) {
+          console.error('Failed to send message notification:', error);
+        }
       }
     } catch (error) {
       client.emit('error', { message: error.message });

@@ -19,10 +19,122 @@ export class UsersService {
     if (error) {
       throw new NotFoundException('User profile not found');
     }
+    return data;
+  }
+
+  // Create a study partner request
+  async createStudyPartnerRequest(requesterId: string, recipientId: string) {
+    if (requesterId === recipientId) {
+      throw new Error("You cannot send a request to yourself.");
+    }
+
+    // Check for existing pending request
+    const { data: existing } = await this.supabase
+      .from('study_partner_requests')
+      .select('*')
+      .eq('requester_id', requesterId)
+      .eq('recipient_id', recipientId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error("A pending request already exists.");
+    }
+
+    // Insert new request
+    const { data, error } = await this.supabaseAdmin
+      .from('study_partner_requests')
+      .insert({
+        requester_id: requesterId,
+        recipient_id: recipientId,
+        status: 'pending'
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to create request: ${error.message}`);
+    }
 
     return data;
   }
 
+  // List incoming study partner requests
+  async getIncomingPartnerRequests(userId: string) {
+    const { data, error } = await this.supabase
+      .from('study_partner_requests')
+      .select(`
+        id, requester_id, recipient_id, status, created_at,
+        requester:requester_id(id, email, full_name, avatar_url)
+      `)
+      .eq('recipient_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch requests: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  // Respond to a study partner request
+  async respondToPartnerRequest(userId: string, requestId: string, action: 'accept' | 'decline') {
+    // Get the request
+    const { data: request, error: reqError } = await this.supabase
+      .from('study_partner_requests')
+      .select('*')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (reqError || !request) {
+      throw new Error("Request not found.");
+    }
+    if (request.recipient_id !== userId) {
+      throw new Error("You are not authorized to respond to this request.");
+    }
+    if (request.status !== 'pending') {
+      throw new Error("Request is not pending.");
+    }
+
+    // Update request status
+    const { error: updateError } = await this.supabaseAdmin
+      .from('study_partner_requests')
+      .update({
+        status: action === 'accept' ? 'accepted' : 'declined',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (updateError) {
+      throw new Error(`Failed to update request: ${updateError.message}`);
+    }
+
+    // If accepted, add to study_partners
+    if (action === 'accept') {
+      // Check if already partners
+      const { data: existing } = await this.supabase
+        .from('study_partners')
+        .select('*')
+        .or(`and(user_id.eq.${request.requester_id},partner_id.eq.${request.recipient_id}),and(user_id.eq.${request.recipient_id},partner_id.eq.${request.requester_id})`);
+
+      if (!existing || existing.length === 0) {
+        // Insert partnership
+        const { error: partnerError } = await this.supabaseAdmin
+          .from('study_partners')
+          .insert([
+            { user_id: request.requester_id, partner_id: request.recipient_id }
+          ]);
+        
+        if (partnerError && !partnerError.message.includes('duplicate key')) {
+          throw new Error(`Failed to create partnership: ${partnerError.message}`);
+        }
+      }
+    }
+
+    return { status: action, requester_id: request.requester_id, recipient_id: request.recipient_id };
+  }
 
   async deleteUser(userId: string) {
     const { error: profileError } = await this.supabaseAdmin
@@ -43,7 +155,7 @@ export class UsersService {
     return { message: 'User deleted successfully' };
   }
 
-  // List all users except the current user and existing study partners
+  // List all users except the current user, existing study partners, and pending requests
   async listAllUsersExcept(userId: string, offset = 0, limit = 20) {
     // Get existing study partner IDs (bidirectional lookup)
     const { data: partners } = await this.supabase
@@ -51,10 +163,22 @@ export class UsersService {
       .select('user_id, partner_id')
       .or(`user_id.eq.${userId},partner_id.eq.${userId}`);
     
+    // Get pending request IDs (both sent and received)
+    const { data: pendingRequests } = await this.supabase
+      .from('study_partner_requests')
+      .select('requester_id, recipient_id')
+      .or(`requester_id.eq.${userId},recipient_id.eq.${userId}`)
+      .eq('status', 'pending');
+    
     const partnerIds = partners?.map(p => 
       p.user_id === userId ? p.partner_id : p.user_id
     ) || [];
-    const excludeIds = [userId, ...partnerIds];
+    
+    const pendingIds = pendingRequests?.map(r => 
+      r.requester_id === userId ? r.recipient_id : r.requester_id
+    ) || [];
+    
+    const excludeIds = [userId, ...partnerIds, ...pendingIds];
 
     if (excludeIds.length === 1) {
       // Only excluding current user
@@ -69,7 +193,7 @@ export class UsersService {
       }
       return data;
     } else {
-      // Excluding current user and partners
+      // Excluding current user, partners, and pending requests
       const { data, error } = await this.supabase
         .from('user_profiles')
         .select('id, email, full_name, avatar_url')
@@ -121,26 +245,46 @@ export class UsersService {
 
   // Get user's study partners (bidirectional lookup)
   async getStudyPartners(userId: string) {
-    const { data, error } = await this.supabase
+    console.log('getStudyPartners called with userId:', userId);
+    
+    // Simple approach: get all partnerships and then fetch user profiles separately
+    const { data: partnerships, error } = await this.supabase
       .from('study_partners')
-      .select(`
-        user_id, partner_id,
-        user_profiles!study_partners_partner_id_fkey(id, email, full_name, avatar_url),
-        partner_profiles:user_profiles!study_partners_user_id_fkey(id, email, full_name, avatar_url)
-      `)
+      .select('user_id, partner_id')
       .or(`user_id.eq.${userId},partner_id.eq.${userId}`);
 
+    console.log('Partnerships query result:', { partnerships, error });
+
     if (error) {
+      console.error('Error fetching partnerships:', error);
       throw new Error(`Failed to fetch study partners: ${error.message}`);
     }
 
-    return data?.map(item => {
-      // Return the other person in the partnership
-      if (item.user_id === userId) {
-        return item.user_profiles;
-      } else {
-        return item.partner_profiles;
-      }
-    }).filter(Boolean) || [];
+    if (!partnerships || partnerships.length === 0) {
+      console.log('No partnerships found for user:', userId);
+      return [];
+    }
+
+    // Get the partner IDs
+    const partnerIds = partnerships.map(p => 
+      p.user_id === userId ? p.partner_id : p.user_id
+    );
+    
+    console.log('Partner IDs:', partnerIds);
+
+    // Fetch user profiles for these partners
+    const { data: profiles, error: profileError } = await this.supabase
+      .from('user_profiles')
+      .select('id, email, full_name, avatar_url')
+      .in('id', partnerIds);
+
+    console.log('Profiles query result:', { profiles, profileError });
+
+    if (profileError) {
+      console.error('Error fetching partner profiles:', profileError);
+      throw new Error(`Failed to fetch partner profiles: ${profileError.message}`);
+    }
+
+    return profiles || [];
   }
 }

@@ -15,6 +15,7 @@ import { ChatModule } from './chat/chat.module';
 import { SharedNotesModule } from './shared-notes/shared-notes.module';
 import { StudySessionsModule } from './study-sessions/study-sessions.module';
 import { StudyGroupsModule } from './study-groups/study-groups.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ ConfigModule.forRoot({
     SharedNotesModule,
     StudySessionsModule,
     StudyGroupsModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],
