@@ -30,7 +30,7 @@ const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-
         ...n,
         uploadedAt: n.uploaded_at,
       }));
-      setNotes(notes.filter((n: Note) => n.url.endsWith(".pdf")));
+setNotes(notes.filter((n: Note) => n.url && n.url.endsWith(".pdf")));
     } catch (err: any) {
       setNotes([]);
       setError(err.message || "Error fetching notes");
