@@ -237,13 +237,13 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
             <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
               <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                 <i className="bx bx-library text-orange-500 mr-2"></i>
-                Your PDF Documents ({notes.filter(n => n.url.endsWith(".pdf")).length})
+Your PDF Documents ({notes.filter(n => n.url && n.url.endsWith(".pdf")).length})
               </h3>
               
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {notes.filter(n => n.url.endsWith(".pdf")).map((note, index) => (
-                  <button
-                    key={note.id}
+{notes.filter(n => n.url && n.url.endsWith(".pdf")).map((note, index) => (
+  <button
+                    key={note.id || index}
                     className="w-full bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-orange-500 px-4 py-3 rounded-xl text-left transition-all duration-300 transform hover:scale-105 group animate-fade-in-up"
                     style={{ animationDelay: `${index * 100}ms` }}
                     onClick={() => handleSelectNote(note)}
@@ -265,8 +265,8 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
                   </button>
                 ))}
                 
-                {notes.filter(n => n.url.endsWith(".pdf")).length === 0 && (
-                  <div className="text-center py-12">
+{notes.filter(n => n.url && n.url.endsWith(".pdf")).length === 0 && (
+  <div className="text-center py-12">
                     <i className="bx bx-file-pdf text-6xl text-gray-600 mb-4"></i>
                     <h4 className="text-lg font-semibold text-white mb-2">No PDF documents found</h4>
                     <p className="text-gray-400">Upload your first PDF to get started</p>
