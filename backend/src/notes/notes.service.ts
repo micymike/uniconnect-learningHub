@@ -2,12 +2,14 @@ import { Injectable, InternalServerErrorException, Inject } from '@nestjs/common
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getMimeType } from './mime-types';
+import { TranscriptionService } from './transcription.service';
 
 @Injectable()
 export class NotesService {
   constructor(
     @Inject('SUPABASE_ADMIN_CLIENT')
-    private readonly supabase: SupabaseClient
+    private readonly supabase: SupabaseClient,
+    private readonly transcriptionService: TranscriptionService
   ) {}
 
   private s3 = new S3Client({
@@ -93,6 +95,42 @@ export class NotesService {
     }
   }
 
+  async saveGeneratedNote(
+    userId: string,
+    noteName: string,
+    content: string,
+    timestamp: string
+  ) {
+    try {
+      // Insert generated note as a text note in Supabase
+      const { data, error } = await this.supabase
+        .from('notes')
+        .insert([
+          {
+            user_id: userId,
+            name: noteName,
+            url: null,
+            uploaded_at: timestamp,
+            folder: 'AI Generated',
+            tags: ['ai-generated'],
+            color_label: '#3B82F6', // blue
+            icon: 'bx-brain',
+            file_type: 'txt',
+            ocr_text: content,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        throw new InternalServerErrorException('Failed to save generated note to Supabase');
+      }
+
+      return { success: true, note: data };
+    } catch (err) {
+      throw new InternalServerErrorException("Failed to save generated note");
+    }
+  }
   async listNotes(userId: string) {
     try {
       const { data, error } = await this.supabase
@@ -147,6 +185,48 @@ export class NotesService {
       return { success: true, id: data?.id };
     } catch (err) {
       throw new InternalServerErrorException("Failed to save flashcard score");
+    }
+  }
+
+  async saveTranscribedNote(
+    userId: string,
+    transcription: string,
+    noteName: string
+  ) {
+    try {
+      // Generate structured notes using Azure AI
+      const structuredNotes = await this.transcriptionService.generateNotes(transcription);
+
+      // Create a text file with the notes
+      const notesBuffer = Buffer.from(structuredNotes, 'utf-8');
+      const textFile = {
+        buffer: notesBuffer,
+        originalname: `${noteName}.txt`,
+        mimetype: 'text/plain'
+      } as Express.Multer.File;
+
+      // Save as regular note
+      const result = await this.uploadNote(
+        userId,
+        noteName,
+        textFile,
+        'text/plain',
+        'AI Generated',
+        ['ai-generated', 'transcription'],
+        '#10B981',
+        'bx-microphone',
+        'txt',
+        transcription
+      );
+
+      return {
+        ...result,
+        transcription,
+        structuredNotes
+      };
+    } catch (err) {
+      console.error('Note processing error:', err);
+      throw new InternalServerErrorException('Failed to process and save note');
     }
   }
 }
