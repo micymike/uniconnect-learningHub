@@ -78,4 +78,33 @@ export class NotesController {
     const userId = req.user['userId'];
     return await this.notesService.listNotes(userId);
   }
+
+  @Post('save-transcription')
+  async saveTranscription(
+    @Body('transcription') transcription: string,
+    @Body('noteName') noteName: string,
+    @Req() req: Request,
+  ) {
+    if (!transcription || !transcription.trim()) throw new BadRequestException('Transcription text required');
+    if (!noteName || !noteName.trim()) throw new BadRequestException('Note name required');
+    if (!req.user || !req.user['userId']) throw new BadRequestException('User not authenticated');
+    
+    const userId = req.user['userId'];
+    return await this.notesService.saveTranscribedNote(userId, transcription.trim(), noteName.trim());
+  }
+
+  @Post('save-generated')
+  async saveGeneratedNote(
+    @Body('noteName') noteName: string,
+    @Body('content') content: string,
+    @Body('timestamp') timestamp: string,
+    @Req() req: Request,
+  ) {
+    if (!noteName || !noteName.trim()) throw new BadRequestException('Note name required');
+    if (!content || !content.trim()) throw new BadRequestException('Note content required');
+    if (!timestamp || !timestamp.trim()) throw new BadRequestException('Timestamp required');
+    if (!req.user || !req.user['userId']) throw new BadRequestException('User not authenticated');
+    const userId = req.user['userId'];
+    return await this.notesService.saveGeneratedNote(userId, noteName.trim(), content.trim(), timestamp.trim());
+  }
 }

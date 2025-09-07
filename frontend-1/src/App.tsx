@@ -25,6 +25,7 @@ import Feedback from './pages/Feedback';
 import FindStudyPartner from './pages/Student/FindStudyPartner';
 import StudySpace from './pages/Student/StudySpace';
 import NotificationPage from './pages/Student/NotificationPage';
+import AINoteTaker from './pages/Student/AINoteTaker';
 
 import { useSocket } from './hooks/useSocket';
 import { useStudentNotifications, requestNotificationPermission } from './components/ChatNotification';
@@ -214,6 +215,7 @@ function App() {
           <Route path="mynotes" element={<MyNotesWithBuddy />} />
           <Route path="find-partner" element={<FindStudyPartner />} />
           <Route path="study-space" element={<StudySpace />} />
+          <Route path="ai-note-taker" element={<AINoteTaker />} />
           <Route path="notifications" element={<NotificationPage />} />
         </Route>
       </Routes>
