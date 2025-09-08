@@ -1,11 +1,15 @@
 import { Controller, Post, Body, UseGuards, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
+import { MathGPTService } from './mathgpt.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('ai')
 export class AIController {
-  constructor(private readonly aiService: AIService) {}
+  constructor(
+    private readonly aiService: AIService,
+    private readonly mathGPTService: MathGPTService
+  ) {}
 
   // Analyze Image (OCR + AI Explanation)
   @UseGuards(JwtAuthGuard)
@@ -123,5 +127,20 @@ export class AIController {
     const userId = req.user.userId;
     const answer = await this.aiService.studyAssist(userId, question, file, pdfUrl);
     return { answer };
+  }
+
+  // MathGPT: Solve math problems with video explanations
+  @UseGuards(JwtAuthGuard)
+  @Post('solve-math')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async solveMathProblem(
+    @Req() req,
+    @Body('problem') problem: string,
+    @UploadedFile() image?: Express.Multer.File,
+  ): Promise<{ solution: any; videoScript: any }> {
+    const userId = req.user.userId;
+    const solution = await this.mathGPTService.solveMathProblem(userId, problem, image);
+    const videoScript = await this.mathGPTService.generateVideoScript(solution);
+    return { solution, videoScript };
   }
 }
