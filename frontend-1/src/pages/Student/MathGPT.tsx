@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import VideoGenerator from "../../components/VideoGenerator";
 import "boxicons/css/boxicons.min.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
@@ -23,6 +24,7 @@ interface VideoScript {
   script: string;
   animations: any[];
   duration: number;
+  audioPath?: string;
 }
 
 const MathGPT: React.FC = () => {
@@ -77,6 +79,11 @@ const MathGPT: React.FC = () => {
       const data = await response.json();
       setSolution(data.solution);
       setVideoScript(data.videoScript);
+      if (data.videoScript && data.videoScript.audioPath) {
+        if (audioRef.current) {
+          audioRef.current.src = `${API_BASE.replace(/\/api$/, "")}/tmp/${data.videoScript.audioPath.split("/tmp/").pop()}`;
+        }
+      }
     } catch (error) {
       console.error("Error solving problem:", error);
     } finally {
@@ -172,40 +179,17 @@ const MathGPT: React.FC = () => {
   };
 
   const playVideoExplanation = () => {
-    if (!videoScript) return;
-    
+    if (!videoScript || !videoScript.audioPath || !audioRef.current) return;
     setIsPlaying(true);
     setCurrentStep(0);
-    
-    // Use Web Speech API for narration
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(videoScript.script);
-      utterance.rate = 0.8;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      
-      utterance.onend = () => {
-        setIsPlaying(false);
-      };
-      
-      speechSynthesis.speak(utterance);
-      
-      // Animate through steps
-      let stepIndex = 0;
-      const stepInterval = setInterval(() => {
-        if (stepIndex < solution!.steps.length) {
-          setCurrentStep(stepIndex + 1);
-          stepIndex++;
-        } else {
-          clearInterval(stepInterval);
-        }
-      }, videoScript.duration / solution!.steps.length);
-    }
+    audioRef.current.currentTime = 0;
+    audioRef.current.play();
   };
 
   const stopVideoExplanation = () => {
-    if ('speechSynthesis' in window) {
-      speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
     setIsPlaying(false);
     setCurrentStep(0);
@@ -396,18 +380,25 @@ const MathGPT: React.FC = () => {
                   <p className="text-white text-xl font-mono">{solution.finalAnswer}</p>
                 </div>
 
-                {/* Video Controls */}
+                {/* Video Explanation */}
                 <div className="bg-gray-700 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-3 flex items-center">
                     <i className="bx bx-video text-orange-500 mr-2"></i>
                     Video Explanation
                   </h3>
-                  <div className="flex space-x-3">
+                  
+                  <VideoGenerator 
+                    steps={solution.steps}
+                    isPlaying={isPlaying}
+                    onComplete={() => setIsPlaying(false)}
+                  />
+                  
+                  <div className="flex space-x-3 mt-4">
                     <button
                       onClick={playVideoExplanation}
-                      disabled={isPlaying}
+                      disabled={isPlaying || !videoScript?.audioPath}
                       className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                        isPlaying
+                        isPlaying || !videoScript?.audioPath
                           ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                           : "bg-green-600 hover:bg-green-700 text-white"
                       }`}
@@ -424,12 +415,8 @@ const MathGPT: React.FC = () => {
                         Stop
                       </button>
                     )}
+                    <audio ref={audioRef} onEnded={() => setIsPlaying(false)} style={{ display: "none" }} />
                   </div>
-                  {isPlaying && (
-                    <div className="mt-3 text-sm text-gray-400">
-                      🎵 Audio explanation is playing... Follow along with the highlighted steps above.
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
@@ -441,13 +428,7 @@ const MathGPT: React.FC = () => {
           </div>
         </div>
 
-        {/* Hidden Canvas for Video Generation */}
-        <canvas
-          ref={canvasRef}
-          className="hidden"
-          width={800}
-          height={600}
-        />
+
       </div>
     </div>
   );
