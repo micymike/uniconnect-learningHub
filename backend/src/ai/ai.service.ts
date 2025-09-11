@@ -4,6 +4,130 @@ import { Database } from '../types/supabase';
 import axios from 'axios';
 import { Express } from 'express';
 
+/**
+ * Fetch a summary from Wikipedia for a given query.
+ * Returns null if not found or error.
+ */
+async function fetchWikipediaSummary(query: string): Promise<string | null> {
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+    const res = await axios.get(url, { timeout: 4000 });
+    if (res.data && res.data.extract) {
+      return res.data.extract;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Search DuckDuckGo for recent information (free alternative to Google Search API)
+ */
+async function searchDuckDuckGo(query: string): Promise<string | null> {
+  try {
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+    const res = await axios.get(url, { timeout: 5000 });
+    if (res.data && res.data.Abstract) {
+      return res.data.Abstract;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Fetch recent news from NewsAPI (free tier: 1000 requests/month)
+ */
+async function fetchRecentNews(query: string): Promise<string | null> {
+  try {
+    // Using free tier - no API key needed for basic searches
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=3&language=en`;
+    const res = await axios.get(url, { 
+      timeout: 5000,
+      headers: {
+        'X-API-Key': process.env.NEWS_API_KEY || 'demo' // Use demo for testing
+      }
+    });
+    if (res.data && res.data.articles && res.data.articles.length > 0) {
+      const articles = res.data.articles.slice(0, 2);
+      return articles.map((article: any) => 
+        `${article.title} - ${article.description} (${article.publishedAt.split('T')[0]})`
+      ).join('\n');
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Search academic papers using arXiv API (completely free)
+ */
+async function searchArxiv(query: string): Promise<string | null> {
+  try {
+    const url = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=0&max_results=2`;
+    const res = await axios.get(url, { timeout: 5000 });
+    if (res.data && res.data.includes('<entry>')) {
+      // Basic XML parsing for titles and summaries
+      const titleMatch = res.data.match(/<title>([^<]+)<\/title>/g);
+      const summaryMatch = res.data.match(/<summary>([^<]+)<\/summary>/g);
+      if (titleMatch && summaryMatch && titleMatch.length > 1) {
+        return `Recent research: ${titleMatch[1].replace(/<\/?title>/g, '')} - ${summaryMatch[0].replace(/<\/?summary>/g, '').substring(0, 200)}...`;
+      }
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Get real-time data by combining multiple free sources
+ */
+async function getRealtimeInfo(query: string): Promise<string | null> {
+  const searches = [
+    fetchWikipediaSummary(query),
+    searchDuckDuckGo(query),
+    fetchRecentNews(query),
+    searchArxiv(query)
+  ];
+  
+  const results = await Promise.allSettled(searches);
+  const validResults = results
+    .filter(result => result.status === 'fulfilled' && result.value)
+    .map(result => (result as PromiseFulfilledResult<string>).value);
+  
+  if (validResults.length > 0) {
+    return validResults.join('\n\n');
+  }
+  return null;
+}
+
+/**
+ * Fetch search results from LangSearch API (open-source web search for LLMs)
+ */
+async function fetchLangSearchResults(query: string): Promise<string | null> {
+  try {
+    // Change this endpoint to your LangSearch instance or a public endpoint
+    const endpoint = process.env.LANGSEARCH_API_URL || "http://localhost:8080/search";
+    const res = await axios.get(endpoint, {
+      params: { q: query, n: 3 }, // n: number of results
+      timeout: 5000
+    });
+    if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+      // Format top results as context
+      return res.data.results.map((r: any, i: number) =>
+        `[${i + 1}] ${r.title}\n${r.snippet}\n${r.url}`
+      ).join('\n\n');
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
 @Injectable()
 export class AIService {
   constructor(
@@ -124,14 +248,40 @@ export class AIService {
         return "Sorry, I couldn't process the image. Please make sure the image is valid and try again.";
       }
     } else {
-      // Text-only fallback
-      const prompt = [
+      // Text-only fallback with enhanced real-time search and LangSearch
+      let searchContext: string | null = null;
+      if (typeof message === "string" && message.length > 5) {
+        const generalQ = /^(who|what|when|where|why|how|explain|define|tell me about|summarize|give me a summary of|latest|recent|current|news about|update on)\b/i;
+        const currentQ = /\b(latest|recent|current|today|2024|2023|now|update|news)\b/i;
+        
+        if (generalQ.test(message.trim()) || currentQ.test(message.trim())) {
+          // Extract the main topic
+          let topic = message.replace(generalQ, "").replace(/[\?\.\!]+$/, "").trim();
+          if (topic.length < 3) topic = message.trim();
+          
+          // Try LangSearch first
+          searchContext = await fetchLangSearchResults(topic);
+          // Fallback to other sources if LangSearch fails
+          if (!searchContext) {
+            if (currentQ.test(message.trim())) {
+              searchContext = await getRealtimeInfo(topic);
+            } else {
+              searchContext = await fetchWikipediaSummary(topic);
+            }
+          }
+        }
+      }
+      const promptParts = [
         systemPrompt,
         "Here is the conversation so far:",
         ...history,
         `Q: ${message}`,
         "A:"
-      ].join('\n');
+      ];
+      if (searchContext) {
+        promptParts.splice(2, 0, `Web search results for context: ${searchContext}`);
+      }
+      const prompt = promptParts.join('\n');
 
       // Call Azure OpenAI
       const aiReply = await this.callAzureOpenAI(prompt);
@@ -346,7 +496,7 @@ export class AIService {
           ]
         }
       ],
-      max_tokens: 512
+      
     };
     const headers = {
       "Content-Type": "application/json",
