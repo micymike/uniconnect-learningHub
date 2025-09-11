@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { 
+  Brain, Upload, FileText, Play, RotateCcw, Trophy, Target,
+  Clock, Star, CheckCircle, X, Plus, Eye, Download, Trash2,
+  BookOpen, Zap, Award, Gamepad2
+} from 'lucide-react';
 
-// Type for a matching pair
 type Pair = {
   id: number;
   term: string;
@@ -55,7 +59,6 @@ const MatchingGame: React.FC = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // Upload state
   const [file, setFile] = useState<File | null>(null);
   const [noteName, setNoteName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -63,7 +66,6 @@ const MatchingGame: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch notes on mount
   const fetchNotes = async () => {
     setLoadingNotes(true);
     try {
@@ -89,7 +91,6 @@ const MatchingGame: React.FC = () => {
     fetchNotes();
   }, []);
 
-  // Fetch note content and generate pairs when a note is selected
   useEffect(() => {
     if (!selectedNote) return;
     const fetchPairs = async () => {
@@ -109,15 +110,12 @@ const MatchingGame: React.FC = () => {
         let noteText = "";
 
         if (["txt", "md"].includes(ext)) {
-          // Fetch text content directly
           const res = await fetch(selectedNote.url);
           noteText = await res.text();
         } else {
-          // For PDF/DOCX, send url to backend (backend should handle extraction)
           noteText = selectedNote.url;
         }
 
-        // Call backend to get matching pairs
         const res = await fetch(`${api_url}/ai/matching-pairs`, {
           method: "POST",
           headers: {
@@ -138,7 +136,6 @@ const MatchingGame: React.FC = () => {
         }));
         setPairs(pairs);
 
-        // Prepare left (terms) and right (definitions) columns, shuffled
         setLeftCards(shuffle(pairs.map((p) => ({
           id: p.id,
           value: p.term,
@@ -162,14 +159,12 @@ const MatchingGame: React.FC = () => {
     fetchPairs();
   }, [selectedNote]);
 
-  // Handle card selection and matching
   useEffect(() => {
     if (selectedLeft !== null && selectedRight !== null) {
       let moveMade = false;
       const left = leftCards[selectedLeft];
       const right = rightCards[selectedRight];
       if (left.id === right.id) {
-        // Match!
         moveMade = true;
         const newLeft = leftCards.map((c, i) =>
           i === selectedLeft ? { ...c, matched: true, selected: false } : c
@@ -183,7 +178,6 @@ const MatchingGame: React.FC = () => {
         setScore((s) => s + 10);
         setMessage(CELEBRATE[Math.floor(Math.random() * CELEBRATE.length)] + " Match!");
       } else {
-        // Not a match
         moveMade = true;
         setTimeout(() => {
           setLeftCards((prev) =>
@@ -228,7 +222,6 @@ const MatchingGame: React.FC = () => {
     setRightCards(shuffle(rightCards.map((c) => ({ ...c, matched: false, selected: false }))));
   };
 
-  // Upload logic (from MyNotes)
   const handleUpload = async () => {
     setUploadError("");
     setUploadSuccess("");
@@ -279,159 +272,353 @@ const MatchingGame: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 flex flex-col items-center py-8 px-2">
-      <h1 className="text-3xl font-bold text-indigo-700 mb-2 text-center">Matching Game</h1>
-      <p className="mb-2 text-gray-700 text-center">
-        Select a note to play! Match questions (left) to answers (right). Fewer moves = higher score.
-      </p>
-      {/* New message about PDF notes */}
-      <div className="mb-4 text-center text-indigo-900 font-medium">
-        The games are generated from the PDF notes you upload below. Upload your notes to create new games!
-      </div>
-      {/* Upload Section */}
-      <div className="w-full max-w-md mb-8 bg-white/80 rounded-xl shadow p-6 flex flex-col items-center">
-        <h2 className="text-lg font-bold text-indigo-700 mb-4">Upload Note</h2>
-        <input
-          type="text"
-          placeholder="Enter note name..."
-          value={noteName}
-          onChange={(e) => setNoteName(e.target.value)}
-          className="w-full px-4 py-2 mb-3 border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          disabled={uploading}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.doc,.docx,.txt,.md"
-          className="w-full mb-3"
-          onChange={(e) => {
-            const selectedFile = e.target.files?.[0] || null;
-            setFile(selectedFile);
-            if (selectedFile && !noteName) {
-              setNoteName(selectedFile.name.split('.')[0]);
-            }
-          }}
-          disabled={uploading}
-        />
-        <button
-          onClick={handleUpload}
-          disabled={uploading || !file || !noteName.trim()}
-          className={`w-full py-2 rounded-lg font-semibold transition-all duration-300 ${
-            uploading || !file || !noteName.trim()
-              ? "bg-indigo-200 text-indigo-400 cursor-not-allowed"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
-          }`}
-        >
-          {uploading ? "Uploading..." : "Upload Note"}
-        </button>
-        {uploadError && (
-          <div className="mt-3 text-red-600 text-sm">{uploadError}</div>
-        )}
-        {uploadSuccess && (
-          <div className="mt-3 text-green-600 text-sm">{uploadSuccess}</div>
-        )}
-      </div>
-      {error && <div className="mb-4 text-red-600 font-semibold">{error}</div>}
-      {/* Note selection */}
-      <div className="mb-6 w-full max-w-2xl">
-        {loadingNotes ? (
-          <div className="text-lg text-gray-500">Loading your notes...</div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {notes.map((note) => (
-              <button
-                key={note.id}
-                className={`px-4 py-2 rounded-lg font-semibold shadow transition-all ${
-                  selectedNote?.id === note.id
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-indigo-700 hover:bg-indigo-100"
-                }`}
-                onClick={() => setSelectedNote(note)}
-              >
-                {note.name}
-              </button>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8 animate-fade-in-up">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 flex items-center">
+              <Brain className="text-orange-500 mr-3" />
+              AI Matching Game
+            </h1>
+            <p className="text-gray-400 text-lg">Upload your notes and test your knowledge with AI-generated matching pairs!</p>
           </div>
-        )}
-      </div>
-      {/* Game grid */}
-      {loadingGame ? (
-        <div className="text-lg text-gray-500">Loading game...</div>
-      ) : selectedNote && pairs.length > 0 ? (
-        <>
-          <div className="mb-4 flex flex-col sm:flex-row gap-2 items-center">
-            <span className="bg-white rounded px-3 py-1 shadow text-indigo-700 font-semibold">Moves: {moves}</span>
-            <span className="bg-white rounded px-3 py-1 shadow text-pink-700 font-semibold">Score: {score}</span>
-            {gameOver && (
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 font-bold"
-                onClick={resetGame}
-              >
-                Play Again
-              </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 mb-6 animate-fade-in-up animation-delay-200">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-white">
+                <Upload className="text-orange-500" />
+                Upload Note
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-blue-400" />
+                    Note name:
+                  </label>
+                  <input
+                    type="text"
+                    value={noteName}
+                    onChange={(e) => setNoteName(e.target.value)}
+                    placeholder="Enter note name..."
+                    className="w-full p-3 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-300"
+                    disabled={uploading}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 flex items-center">
+                    <Plus className="h-4 w-4 mr-2 text-green-400" />
+                    Select file:
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,.md"
+                    className="w-full p-3 bg-gray-900/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-500 file:text-white hover:file:bg-orange-600 transition-all duration-300"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0] || null;
+                      setFile(selectedFile);
+                      if (selectedFile && !noteName) {
+                        setNoteName(selectedFile.name.split('.')[0]);
+                      }
+                    }}
+                    disabled={uploading}
+                  />
+                </div>
+
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading || !file || !noteName.trim()}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 px-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg shadow-orange-500/20"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload Note
+                    </>
+                  )}
+                </button>
+
+                {uploadError && (
+                  <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-xl border border-red-500/30">
+                    {uploadError}
+                  </div>
+                )}
+                {uploadSuccess && (
+                  <div className="text-green-400 text-sm bg-green-900/20 p-3 rounded-xl border border-green-500/30">
+                    {uploadSuccess}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 animate-fade-in-up animation-delay-400">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-white">
+                <BookOpen className="text-orange-500" />
+                Your Notes
+              </h2>
+              
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {loadingNotes ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-3"></div>
+                    <p className="text-gray-400">Loading notes...</p>
+                  </div>
+                ) : notes.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`p-3 border rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                      selectedNote?.id === note.id
+                        ? 'border-orange-500 bg-orange-900/20'
+                        : 'border-gray-700 hover:border-orange-400/50 bg-gray-700/30 hover:bg-gray-700/50'
+                    }`}
+                    onClick={() => setSelectedNote(note)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-white">{note.name}</h3>
+                        <div className="flex items-center mt-2">
+                          <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full">
+                            <FileText className="h-3 w-3 inline mr-1" />
+                            {note.file_type?.toUpperCase() || 'FILE'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedNote(note);
+                          }}
+                          className={`p-1 transition-all duration-300 transform hover:scale-110 ${
+                            selectedNote?.id === note.id
+                              ? 'text-orange-500'
+                              : 'text-gray-400 hover:text-orange-500'
+                          }`}
+                          title="Select for game"
+                        >
+                          <Play className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {(!notes || notes.length === 0) && !loadingNotes && (
+                  <div className="text-gray-400 text-center py-8">
+                    <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-600" />
+                    <p>No notes yet. Upload your first one!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {selectedNote && !loadingGame && pairs.length > 0 ? (
+              <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 animate-fade-in-up animation-delay-300">
+                <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                      <Gamepad2 className="text-orange-500" />
+                      {selectedNote.name}
+                    </h2>
+                    <div className="flex items-center text-gray-400 mt-1">
+                      <Target className="h-4 w-4 mr-1" />
+                      <span className="mr-3">Match {pairs.length} pairs</span>
+                      <Trophy className="h-4 w-4 mr-1" />
+                      <span>Moves: {moves}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col xs:flex-row gap-2 w-full max-w-xs sm:max-w-none sm:flex-row sm:items-center sm:justify-end">
+                    <div className="flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-xl">
+                      <Star className="h-4 w-4" />
+                      <span className="font-semibold">Score: {score}</span>
+                    </div>
+                    {gameOver && (
+                      <button
+                        onClick={resetGame}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 w-full sm:w-auto font-semibold transition-all duration-300 transform hover:scale-105"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Play Again
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                      <Zap className="text-blue-400" />
+                      Questions
+                    </h3>
+                    <div className="space-y-3">
+                      {leftCards.map((card, idx) => (
+                        <button
+                          key={card.id}
+                          className={`w-full p-4 rounded-xl text-left font-medium transition-all duration-300 transform hover:scale-105 shadow-lg
+                            ${card.matched 
+                              ? "bg-green-500/20 text-green-300 border-2 border-green-500/30 cursor-not-allowed" 
+                              : card.selected 
+                                ? "bg-blue-500/30 text-blue-200 border-2 border-blue-400 scale-105" 
+                                : "bg-gray-700/50 text-white hover:bg-blue-500/20 border-2 border-gray-600 hover:border-blue-400/50"}
+                          `}
+                          disabled={card.matched || selectedLeft !== null || gameOver}
+                          onClick={() => {
+                            if (!card.matched && selectedLeft === null && !gameOver) {
+                              setLeftCards((prev) =>
+                                prev.map((c, i) =>
+                                  i === idx ? { ...c, selected: true } : c
+                                )
+                              );
+                              setSelectedLeft(idx);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            {card.matched && <CheckCircle className="h-5 w-5 text-green-400" />}
+                            <span className="flex-1">{card.value}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                      <Award className="text-pink-400" />
+                      Answers
+                    </h3>
+                    <div className="space-y-3">
+                      {rightCards.map((card, idx) => (
+                        <button
+                          key={card.id}
+                          className={`w-full p-4 rounded-xl text-left font-medium transition-all duration-300 transform hover:scale-105 shadow-lg
+                            ${card.matched 
+                              ? "bg-green-500/20 text-green-300 border-2 border-green-500/30 cursor-not-allowed" 
+                              : card.selected 
+                                ? "bg-pink-500/30 text-pink-200 border-2 border-pink-400 scale-105" 
+                                : "bg-gray-700/50 text-white hover:bg-pink-500/20 border-2 border-gray-600 hover:border-pink-400/50"}
+                          `}
+                          disabled={card.matched || selectedRight !== null || selectedLeft === null || gameOver}
+                          onClick={() => {
+                            if (!card.matched && selectedRight === null && selectedLeft !== null && !gameOver) {
+                              setRightCards((prev) =>
+                                prev.map((c, i) =>
+                                  i === idx ? { ...c, selected: true } : c
+                                )
+                              );
+                              setSelectedRight(idx);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            {card.matched && <CheckCircle className="h-5 w-5 text-green-400" />}
+                            <span className="flex-1">{card.value}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {message && (
+                  <div className="mt-6 text-center">
+                    <div className={`inline-block px-6 py-3 rounded-xl font-bold text-lg ${
+                      gameOver 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                        : matchedCount > 0 && message.includes('Match') 
+                          ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                          : 'bg-gray-700/50 text-gray-300 border border-gray-600'
+                    }`}>
+                      {message}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : loadingGame ? (
+              <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-12 text-center animate-fade-in-up animation-delay-300">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-white mb-2">Generating Game...</h3>
+                <p className="text-gray-400">AI is creating matching pairs from your note.</p>
+              </div>
+            ) : (
+              <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-12 text-center animate-fade-in-up animation-delay-300">
+                <Gamepad2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">Select a Note to Start</h3>
+                <p className="text-gray-400">Choose a note from your collection to generate a matching game.</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-4 bg-red-900/20 border border-red-500/30 rounded-xl p-4 text-red-400 text-center">
+                {error}
+              </div>
             )}
           </div>
-          <div className="w-full max-w-4xl grid grid-cols-2 gap-4 mb-6">
-            {/* Left: Questions/Terms */}
-            <div>
-              <h2 className="text-lg font-bold text-indigo-700 mb-2 text-center">Questions</h2>
-              <div className="flex flex-col gap-2">
-                {leftCards.map((card, idx) => (
-                  <button
-                    key={card.id}
-                    className={`w-full py-3 rounded-lg shadow text-lg font-semibold transition-all duration-200
-                      ${card.matched ? "bg-green-200 text-green-900" : card.selected ? "bg-indigo-300 text-indigo-900" : "bg-white text-indigo-700 hover:bg-indigo-100"}
-                    `}
-                    disabled={card.matched || selectedLeft !== null || gameOver}
-                    onClick={() => {
-                      if (!card.matched && selectedLeft === null && !gameOver) {
-                        setLeftCards((prev) =>
-                          prev.map((c, i) =>
-                            i === idx ? { ...c, selected: true } : c
-                          )
-                        );
-                        setSelectedLeft(idx);
-                      }
-                    }}
-                  >
-                    {card.value}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Right: Answers/Definitions */}
-            <div>
-              <h2 className="text-lg font-bold text-pink-700 mb-2 text-center">Answers</h2>
-              <div className="flex flex-col gap-2">
-                {rightCards.map((card, idx) => (
-                  <button
-                    key={card.id}
-                    className={`w-full py-3 rounded-lg shadow text-lg font-semibold transition-all duration-200
-                      ${card.matched ? "bg-green-200 text-green-900" : card.selected ? "bg-pink-200 text-pink-900" : "bg-white text-pink-700 hover:bg-pink-100"}
-                    `}
-                    disabled={card.matched || selectedRight !== null || selectedLeft === null || gameOver}
-                    onClick={() => {
-                      if (!card.matched && selectedRight === null && selectedLeft !== null && !gameOver) {
-                        setRightCards((prev) =>
-                          prev.map((c, i) =>
-                            i === idx ? { ...c, selected: true } : c
-                          )
-                        );
-                        setSelectedRight(idx);
-                      }
-                    }}
-                  >
-                    {card.value}
-                  </button>
-                ))}
-              </div>
-            </div>
+        </div>
+
+        {loadingGame && (
+          <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 animate-fade-in">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mb-4"></div>
+            <p className="text-white text-lg">Generating your matching game...</p>
           </div>
-          <div className="h-8 text-center text-lg font-semibold text-indigo-600">{message}</div>
-        </>
-      ) : (
-        <div className="text-gray-500 text-lg">Select a note to start the game.</div>
-      )}
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animation-delay-200 {
+          animation-delay: 0.2s;
+          animation-fill-mode: both;
+        }
+
+        .animation-delay-300 {
+          animation-delay: 0.3s;
+          animation-fill-mode: both;
+        }
+
+        .animation-delay-400 {
+          animation-delay: 0.4s;
+          animation-fill-mode: both;
+        }
+      `}</style>
     </div>
   );
 };
