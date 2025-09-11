@@ -2,6 +2,10 @@ import { Injectable, Inject } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as https from 'https';
+/* Azure TTS: No Google TTS imports needed */
 
 interface MathStep {
   step: number;
@@ -350,16 +354,46 @@ export class MathGPTService {
     script: string;
     animations: any[];
     duration: number;
+    audioPath?: string;
   }> {
     const script = this.createNarrationScript(solution);
     const animations = this.createAnimationSequence(solution);
     const duration = this.estimateDuration(solution);
 
+    // Generate narration audio with fallback handling
+    const audioPath = await this.generateNarrationAudio(script);
+
     return {
       script,
       animations,
-      duration
+      duration,
+      audioPath
     };
+  }
+
+  /**
+   * Generate narration audio from script using Google Cloud Text-to-Speech.
+   * Returns the path to the generated audio file (MP3).
+   */
+  /**
+   * Generate narration audio using free TTS services.
+   */
+  private async generateNarrationAudio(script: string): Promise<string | undefined> {
+    try {
+      const response = await axios.post('https://api.streamelements.com/kappa/v2/speech', 
+        { voice: 'Brian', text: script },
+        { responseType: 'arraybuffer', timeout: 15000 }
+      );
+      
+      const outDir = path.join(__dirname, '../../../tmp');
+      if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+      
+      const filePath = path.join(outDir, `narration_${Date.now()}.mp3`);
+      fs.writeFileSync(filePath, Buffer.from(response.data));
+      return filePath;
+    } catch {
+      return undefined;
+    }
   }
 
   private createNarrationScript(solution: MathSolution): string {
