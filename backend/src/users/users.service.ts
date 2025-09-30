@@ -97,6 +97,19 @@ export class UsersService {
       throw new Error("Request is not pending.");
     }
 
+    // Check for duplicate request with new status
+    const { data: duplicate } = await this.supabase
+      .from('study_partner_requests')
+      .select('*')
+      .eq('requester_id', request.requester_id)
+      .eq('recipient_id', request.recipient_id)
+      .eq('status', action === 'accept' ? 'accepted' : 'declined')
+      .maybeSingle();
+
+    if (duplicate) {
+      throw new Error(`A request with this status already exists for these users.`);
+    }
+
     // Update request status
     const { error: updateError } = await this.supabaseAdmin
       .from('study_partner_requests')

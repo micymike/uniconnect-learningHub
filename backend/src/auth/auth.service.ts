@@ -283,4 +283,97 @@ export class AuthService {
       throw error;
     }
   }
+
+  // Google OAuth login handler
+  async googleLogin(googleUser: {
+    googleId: string;
+    email: string;
+    displayName: string;
+    photo?: string;
+    provider: string;
+    accessToken: string;
+  }) {
+    try {
+      // 1. Check if user exists in Supabase Auth
+      const { data: userList, error: userListError } = await this.supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 100,
+      });
+
+      let user = userList?.users?.find((u: any) => u.email === googleUser.email);
+
+      // 2. If not, create a user profile (not in Auth, just in user_profiles)
+      if (!user) {
+        // Upsert user profile
+        const { data: profile, error: profileError } = await this.supabaseAdmin
+          .from('user_profiles')
+          .upsert({
+            email: googleUser.email,
+            full_name: googleUser.displayName,
+            avatar_url: googleUser.photo,
+            provider: 'google',
+            google_id: googleUser.googleId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (profileError) {
+          throw new InternalServerErrorException('Failed to create Google user profile');
+        }
+
+        // Issue a custom JWT (for demo, not for production use)
+        const jwt = require('jsonwebtoken');
+        const payload = {
+          email: googleUser.email,
+          full_name: googleUser.displayName,
+          provider: 'google',
+          google_id: googleUser.googleId,
+        };
+        const secret = this.config.get('JWT_SECRET') || 'default_jwt_secret';
+        const access_token = jwt.sign(payload, secret, { expiresIn: '7d' });
+
+        return {
+          user: profile,
+          access_token,
+          refresh_token: null,
+          profile,
+          session: null,
+          message: 'Google user created (profile only, not in Supabase Auth).',
+        };
+      }
+
+      // 3. If user exists in Supabase Auth, log them in (simulate login)
+      // Fetch user profile
+      const { data: profile, error: profileError } = await this.supabaseAdmin
+        .from('user_profiles')
+        .select('*')
+        .eq('email', googleUser.email)
+        .single();
+
+      // Issue a custom JWT (for demo, not for production use)
+      const jwt = require('jsonwebtoken');
+      const payload = {
+        email: googleUser.email,
+        full_name: googleUser.displayName,
+        provider: 'google',
+        google_id: googleUser.googleId,
+      };
+      const secret = this.config.get('JWT_SECRET') || 'default_jwt_secret';
+      const access_token = jwt.sign(payload, secret, { expiresIn: '7d' });
+
+      return {
+        user,
+        access_token,
+        refresh_token: null,
+        profile: profile || null,
+        session: null,
+        message: 'Google user logged in (custom JWT, not Supabase session).',
+      };
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    }
+  }
 }

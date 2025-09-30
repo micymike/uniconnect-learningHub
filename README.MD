@@ -98,3 +98,34 @@ This document outlines advanced features to elevate the UniConnect platform for 
 
 We will begin implementing these features, prioritizing those that deliver the most value and engagement.  
 **To get started, please specify which feature you want to work on first!**
+
+---
+
+## Google OAuth Setup & Usage
+
+### 1. Enable Google OAuth in Supabase
+- Go to your Supabase project dashboard.
+- Navigate to "Authentication" > "Providers".
+- Enable "Google" and enter your Google OAuth Client ID and Client Secret (obtain these from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)).
+- Set the redirect URL to: `https://your-frontend-domain/` (or `http://localhost:3001/` for local development).
+
+### 2. Configure Environment Variables
+- In `backend/.env` and `backend/.env.example`, set:
+  ```
+  GOOGLE_OAUTH_CLIENT_ID=your_google_oauth_client_id
+  GOOGLE_OAUTH_CLIENT_SECRET=your_google_oauth_client_secret
+  ```
+- In `frontend-1/.env` and `frontend-1/.env.example`, set:
+  ```
+  VITE_SUPABASE_URL=your_supabase_project_url
+  VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+  ```
+
+### 3. Usage
+- On the login page, click "Sign in with Google".
+- You will be redirected to Google, then back to the app with a Supabase session.
+- The session is handled automatically; you can access user info via Supabase client.
+
+### 4. Troubleshooting
+- Ensure your Supabase project and Google Cloud Console credentials match.
+- Make sure redirect URLs are whitelisted in both Supabase and Google Cloud Console.

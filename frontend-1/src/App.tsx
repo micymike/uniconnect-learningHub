@@ -26,6 +26,8 @@ import FindStudyPartner from './pages/Student/FindStudyPartner';
 import StudySpace from './pages/Student/StudySpace';
 import NotificationPage from './pages/Student/NotificationPage';
 import AINoteTaker from './pages/Student/AINoteTaker';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 import { useSocket } from './hooks/useSocket';
 import { useStudentNotifications, requestNotificationPermission } from './components/ChatNotification';
@@ -172,6 +174,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         
         {/* Admin routes with layout */}
         <Route 

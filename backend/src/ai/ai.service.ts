@@ -199,20 +199,20 @@ export class AIService {
           throw new Error("Azure OpenAI API configuration is incomplete in environment variables.");
         }
         const endpoint = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
-        const payload = {
-          model: deployment,
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: [ "Here is the conversation so far:", ...history, `Q: ${message}`, "A:" ].join('\n') },
-                { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
-              ]
-            }
-          ],
-          max_tokens: 512
-        };
+          const payload = {
+            model: deployment,
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: [ "Here is the conversation so far:", ...history, `Q: ${message}`, "A:" ].join('\n') },
+                  { type: "image_url", image_url: { url: `data:${image.mimetype};base64,${base64Image}` } }
+                ]
+              }
+            ],
+            max_tokens: 2048
+          };
         const headers = {
           "Content-Type": "application/json",
           "api-key": apiKey
@@ -622,7 +622,7 @@ export class AIService {
           { role: 'system', content: 'You are a friendly, supportive AI buddy for students. Adapt your personality to the user\'s vibe, be encouraging, relatable, and always helpful. Use friendly language and emojis when appropriate.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 512,
+        max_tokens: 2048,
         temperature: 0.7,
       },
       {
