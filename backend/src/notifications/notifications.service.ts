@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Inject } from '@nestjs/common';
 import { CreateNotificationDto, UpdateNotificationDto, NotificationFilterDto } from './dto/notification.dto';
 import { Notification, CreateNotificationData } from './interfaces/notification.interface';
+import webpush from 'web-push';
 
 @Injectable()
 export class NotificationsService {
@@ -23,6 +24,19 @@ export class NotificationsService {
       if (error) {
         this.logger.error('Error creating notification:', error);
         throw new Error(`Failed to create notification: ${error.message}`);
+      }
+
+      // Send web push notification to user
+      try {
+        await this.sendPushNotification(createNotificationDto.user_id, {
+          title: createNotificationDto.title || 'Notification',
+          body: createNotificationDto.message || '',
+          icon: '/logo.png',
+          badge: '/logo.png',
+          data: { action_url: createNotificationDto.action_url || '/' }
+        });
+      } catch (pushErr) {
+        this.logger.warn('Failed to send push notification:', pushErr);
       }
 
       return data;
@@ -131,6 +145,46 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error('Error in getUnreadCount:', error);
       throw error;
+    }
+  }
+
+  // --- Push Notification Helpers ---
+  private async getUserPushSubscriptions(userId: string): Promise<any[]> {
+    // Assumes a table 'user_push_subscriptions' with columns: user_id, subscription (JSON)
+    const { data, error } = await this.supabase
+      .from('user_push_subscriptions')
+      .select('subscription')
+      .eq('user_id', userId);
+
+    if (error) {
+      this.logger.error('Error fetching push subscriptions:', error);
+      return [];
+    }
+    return (data || []).map((row: any) => row.subscription);
+  }
+
+  private async sendPushNotification(userId: string, payload: any) {
+    const subscriptions = await this.getUserPushSubscriptions(userId);
+    if (!subscriptions.length) return;
+
+    // Setup VAPID keys
+    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@uniconnect.com';
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      this.logger.warn('VAPID keys not set, cannot send push notifications.');
+      return;
+    }
+
+    webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+
+    for (const sub of subscriptions) {
+      try {
+        await webpush.sendNotification(sub, JSON.stringify(payload));
+      } catch (err) {
+        this.logger.warn('Web push send error:', err);
+      }
     }
   }
 

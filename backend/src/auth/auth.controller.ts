@@ -1,7 +1,10 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Param, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
 import { AuthGuard } from './guards/auth.guard';
+import { Response, Request as ExpressRequest } from 'express';
+import { UseGuards as PassportUseGuards } from '@nestjs/common';
+import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -54,5 +57,25 @@ export class AuthController {
     @Body() updates: { full_name?: string; role?: string },
   ) {
     return this.authService.updateProfile(req.user.id, updates);
+  }
+
+  // Google OAuth endpoints
+  @Get('google')
+  @UseGuards(PassportAuthGuard('google'))
+  async googleAuth(@Req() req) {
+    // Initiates the Google OAuth2 login flow
+  }
+
+  @Get('google/callback')
+  @UseGuards(PassportAuthGuard('google'))
+  async googleAuthRedirect(@Req() req: ExpressRequest, @Res() res: Response) {
+    // req.user is populated by GoogleStrategy
+    const user = req.user as any;
+    // Issue JWT or session using AuthService
+    const tokens = await this.authService.googleLogin(user);
+    // Redirect to frontend with tokens (or set cookie/session)
+    // Example: redirect with tokens in query params
+    const frontendUrl = process.env.FRONTEND_URLS?.split(',')[0] || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/login?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}`);
   }
 }
