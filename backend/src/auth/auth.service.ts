@@ -304,15 +304,21 @@ export class AuthService {
 
       // 2. If not, create a user profile (not in Auth, just in user_profiles)
       if (!user) {
+        // Generate a uuid for id
+        const { v4: uuidv4 } = require('uuid');
+        const generatedId = uuidv4();
+
         // Upsert user profile
         const { data: profile, error: profileError } = await this.supabaseAdmin
           .from('user_profiles')
           .upsert({
+            id: generatedId,
             email: googleUser.email,
             full_name: googleUser.displayName,
             avatar_url: googleUser.photo,
             provider: 'google',
             google_id: googleUser.googleId,
+            role: 'student',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
