@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import TestimonialCarousel from "../components/TestimonialCarousel";
 import { supabase } from "../lib/supabaseClient";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "https://uniconnect-learninghub-backend.onrender.com/api";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register" | "forgotPassword">("login");
