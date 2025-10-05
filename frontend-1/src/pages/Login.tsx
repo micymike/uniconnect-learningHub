@@ -36,13 +36,34 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
+    
     if (accessToken) {
-      localStorage.setItem("token", accessToken);
-      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("userRole", "student");
-      // Optionally fetch user profile here
-      const targetPath = redirectPath.current || "/student";
-      navigate(targetPath, { replace: true });
+      // Decode the JWT token to get user info
+      try {
+        const base64Url = accessToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const userData = JSON.parse(jsonPayload);
+        
+        // Store token and user data
+        localStorage.setItem("token", accessToken);
+        if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+        
+        // Store user information
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("userRole", userData.role || "student");
+        
+        // Navigate to appropriate dashboard based on role
+        const dashboardPath = userData.role === "admin" ? "/admin" : "/student";
+        redirectPath.current = dashboardPath;
+        navigate(dashboardPath, { replace: true });
+      } catch (error) {
+        console.error("Error processing login token:", error);
+        setError("Failed to process login information. Please try again.");
+      }
     } else {
       const token = localStorage.getItem("token");
       if (token) {
