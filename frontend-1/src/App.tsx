@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { UNSAFE_DataRouterContext, UNSAFE_DataRouterStateContext } from 'react-router-dom';
 import Courses from './pages/Courses';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
@@ -169,7 +170,7 @@ function App() {
   return (
     <>
       <PWAInstallPrompt />
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/courses" element={<Courses />} />

@@ -69,13 +69,18 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(PassportAuthGuard('google'))
   async googleAuthRedirect(@Req() req: ExpressRequest, @Res() res: Response) {
-    // req.user is populated by GoogleStrategy
-    const user = req.user as any;
-    // Issue JWT or session using AuthService
-    const tokens = await this.authService.googleLogin(user);
-    // Redirect to frontend with tokens (or set cookie/session)
-    // Example: redirect with tokens in query params
-    const frontendUrl = process.env.FRONTEND_URLS?.split(',')[0] || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/login?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}`);
+    try {
+      // req.user is populated by GoogleStrategy
+      const user = req.user as any;
+      // Issue JWT or session using AuthService
+      const tokens = await this.authService.googleLogin(user);
+      // Redirect to frontend with tokens (or set cookie/session)
+      const frontendUrl = process.env.FRONTEND_URLS?.split(',')[0] || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?access_token=${tokens.access_token}`);
+    } catch (error) {
+      console.error('Google auth error:', error);
+      const frontendUrl = process.env.FRONTEND_URLS?.split(',')[0] || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=Authentication failed. Please try again.`);
+    }
   }
 }
