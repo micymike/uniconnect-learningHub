@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import 'boxicons/css/boxicons.min.css';
 
 const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
@@ -507,10 +508,10 @@ export default function AINoteTaker() {
         <i className="bx bx-brain text-green-500 mr-2"></i>
         AI Generated Notes
       </h3>
-      <div className="bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
-        <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
+      <div className="bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto prose prose-invert prose-sm">
+        <ReactMarkdown>
           {structuredNotes}
-        </pre>
+        </ReactMarkdown>
       </div>
       {/* Save Button and Timestamp */}
       <SaveGeneratedNoteButton
@@ -626,13 +627,47 @@ export default function AINoteTaker() {
                   <i className="bx bx-file text-blue-400 text-2xl"></i>
                   <h2 className="text-xl font-bold text-white">{modalNote.name}</h2>
                 </div>
-                <button
-                  onClick={() => setModalNote(null)}
-                  className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
-                  aria-label="Close note modal"
-                >
-                  <i className="bx bx-x text-2xl"></i>
-                </button>
+                <div className="flex items-center space-x-2">
+                  {modalNote.id || modalNote._id ? (
+                    <button
+                      onClick={async () => {
+                        const noteId = modalNote.id || modalNote._id;
+                        const shareUrl = window.location.origin + '/notes/' + noteId;
+                        const shareText = modalNote.ocr_text || '';
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({
+                              title: modalNote.name,
+                              text: shareText,
+                              url: shareUrl,
+                            });
+                          } catch (err) {
+                            // User cancelled or error
+                          }
+                        } else {
+                          try {
+                            await navigator.clipboard.writeText(shareUrl);
+                            alert('Link copied to clipboard!');
+                          } catch {
+                            alert('Failed to copy link.');
+                          }
+                        }
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+                      aria-label="Share note"
+                      title="Share note"
+                    >
+                      <i className="bx bx-share-alt text-2xl"></i>
+                    </button>
+                  ) : null}
+                  <button
+                    onClick={() => setModalNote(null)}
+                    className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+                    aria-label="Close note modal"
+                  >
+                    <i className="bx bx-x text-2xl"></i>
+                  </button>
+                </div>
               </div>
               {/* Modal Content */}
               <div className="flex-1 overflow-auto">
@@ -656,9 +691,11 @@ export default function AINoteTaker() {
                         ? new Date(modalNote.uploaded_at).toLocaleString()
                         : ""}
                     </div>
-                    <pre className="bg-gray-800 rounded-lg p-4 text-gray-300 text-sm border border-gray-600 whitespace-pre-wrap">
-                      {modalNote.ocr_text || "No content available."}
-                    </pre>
+                    <div className="bg-gray-800 rounded-lg p-4 text-gray-300 text-sm border border-gray-600 whitespace-pre-wrap prose prose-invert prose-sm">
+                      <ReactMarkdown>
+                        {modalNote.ocr_text || "No content available."}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>
