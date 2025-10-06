@@ -135,6 +135,81 @@ export class AIService {
     private supabase: SupabaseClient<Database>,
   ) {}
 
+  /**
+   * Study Buddy with Agents: Each agent brings its own answer, merged for a richer response.
+   */
+  async studyBuddyAgentsChat(
+    studentId: string,
+    message: string,
+    context?: any
+  ): Promise<string> {
+    // Define agent personas
+    const agents = [
+      {
+        name: "Explainer",
+        systemPrompt: "You are Study Buddy the Explainer. Your job is to explain the student's question in detail, breaking down concepts step by step in a friendly, clear way. Use analogies and simple language."
+      },
+      {
+        name: "Summarizer",
+        systemPrompt: "You are Study Buddy the Summarizer. Your job is to provide a concise summary or key points related to the student's question, focusing on the most important facts."
+      },
+      {
+        name: "Example Giver",
+        systemPrompt: "You are Study Buddy the Example Giver. Your job is to provide practical examples, sample problems, or real-world applications to help the student understand the topic."
+      },
+      {
+        name: "Quizzer",
+        systemPrompt: "You are Study Buddy the Quizzer. Your job is to ask the student 1-2 quiz questions or practice problems related to their question, and provide the correct answers after each."
+      }
+    ];
+
+    // Optionally, add context to each agent's system prompt
+    let contextString = "";
+    if (context && typeof context === "object") {
+      if (context.notes && Array.isArray(context.notes) && context.notes.length > 0) {
+        contextString += `\nThe student has these notes: ${context.notes.join(" | ")}.`;
+      }
+      if (context.quizResults && Array.isArray(context.quizResults) && context.quizResults.length > 0) {
+        contextString += `\nRecent quiz results: ${JSON.stringify(context.quizResults)}.`;
+      }
+      if (context.learningPath && Array.isArray(context.learningPath) && context.learningPath.length > 0) {
+        contextString += `\nCurrent learning path: ${context.learningPath.map((lp: any) => lp.title).join(", ")}.`;
+      }
+    }
+
+    // Call each agent in parallel
+    const agentPromises = agents.map(async (agent) => {
+      const prompt = [
+        agent.systemPrompt + contextString,
+        `Student's question: ${message}`,
+        "Your answer:"
+      ].join("\n");
+      try {
+        const answer = await this.callAzureOpenAI(prompt);
+        return `**${agent.name}:**\n${answer}`;
+      } catch (err) {
+        return `**${agent.name}:**\n(Sorry, I couldn't generate an answer this time.)`;
+      }
+    });
+
+    const agentAnswers = await Promise.all(agentPromises);
+
+    // Merge all agent answers into a single, student-friendly response using the LLM
+    const mergePrompt = [
+      "You are Study Buddy, a helpful AI for students.",
+      "Below are answers from different expert agents (Explainer, Summarizer, Example Giver, Quizzer) to the same student question.",
+      "Your job is to merge all the information and advice from these agents into a single, concise, student-friendly response. Do not mention the agent names or separate sections. Write as one unified answer, focusing on clarity, encouragement, and practical help.",
+      "",
+      "Agent answers:",
+      agentAnswers.join("\n\n"),
+      "",
+      "Merged answer:"
+    ].join("\n");
+
+    const mergedAnswer = await this.callAzureOpenAI(mergePrompt);
+    return mergedAnswer;
+  }
+
   // Study Buddy Chatbot (memory-enabled, friendly)
   async studyBuddyChat(
     studentId: string,
@@ -169,8 +244,8 @@ export class AIService {
       dbContext = newContext;
     }
 
-    // Prepare conversation history for context (limit to last 20 exchanges)
-    const history = dbContext.conversation_history || [];
+    // Prepare conversation history for context (limit to last 10 exchanges)
+    const history = (dbContext.conversation_history || []).slice(-10);
     // Build a context-aware system prompt
     let systemPrompt = "You are Study Buddy, a friendly, supportive AI chat companion for students. Your personality adapts to the user's vibe: be casual, encouraging, and relatable if the user is informal, and more professional if the user is formal. Always be helpful, positive, and make the student feel comfortable. Use emojis and friendly language when appropriate. Remember the conversation and respond like a smart, caring friend.";
     // Add proactive context if provided

@@ -7,6 +7,26 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class AIController {
   constructor(private readonly aiService: AIService) {}
 
+  /**
+   * POST /ai/agents-chat
+   * Returns a merged answer from multiple Study Buddy agents (explainer, summarizer, example giver, quizzer).
+   * Body: { message: string, context?: any }
+   * Auth required (student JWT)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('agents-chat')
+  async agentsChat(@Req() req, @Body() body: { message: string; context?: any }) {
+    // Extract studentId from JWT (assume req.user is set by auth middleware)
+    const studentId = req.user?.userId || req.user?.id || req.body.studentId;
+    if (!studentId) {
+      return { error: "Missing studentId in JWT or request." };
+    }
+    if (!body.message || typeof body.message !== "string") {
+      return { error: "Missing or invalid message." };
+    }
+    const answer = await this.aiService.studyBuddyAgentsChat(studentId, body.message, body.context);
+    return { reply: answer };
+  }
   // Analyze Image (OCR + AI Explanation)
   @UseGuards(JwtAuthGuard)
   @Post('analyze-image')

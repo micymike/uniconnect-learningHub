@@ -141,8 +141,8 @@ const StudyBuddy: React.FC = () => {
         });
         data = await res.json();
       } else {
-        // Send text and context as JSON
-        res = await fetch(`${API_BASE}/ai/chat`, {
+        // Send text and context as JSON to agent-based endpoint
+        res = await fetch(`${API_BASE}/ai/agents-chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -166,7 +166,7 @@ const StudyBuddy: React.FC = () => {
               text:
                 imageFile
                   ? data.reply || data.explanation || "Here's what I see in your image."
-                  : data.reply || "I'm here to help you learn! 📚",
+                  : data.reply || data.answer || "I'm here to help you learn! 📚",
               timestamp: new Date(),
             },
           ];
