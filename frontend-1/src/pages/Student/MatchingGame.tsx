@@ -105,15 +105,24 @@ const MatchingGame: React.FC = () => {
       setRightCards([]);
       try {
         const token = localStorage.getItem("token") || "";
-        const filename = selectedNote.url.split('/').pop() || '';
-        const ext = filename.split('.').pop()?.toLowerCase() || '';
+        let filename = "";
+        let ext = "";
         let noteText = "";
 
-        if (["txt", "md"].includes(ext)) {
+        if (selectedNote.url) {
+          filename = selectedNote.url.split('/').pop() || '';
+          ext = filename.split('.').pop()?.toLowerCase() || '';
+        }
+
+        if (selectedNote.url && ["txt", "md"].includes(ext)) {
           const res = await fetch(selectedNote.url);
           noteText = await res.text();
-        } else {
+        } else if (selectedNote.url) {
           noteText = selectedNote.url;
+        } else {
+          setError("Selected note is missing a valid URL.");
+          setLoadingGame(false);
+          return;
         }
 
         const res = await fetch(`${api_url}/ai/matching-pairs`, {

@@ -681,6 +681,40 @@ export class AIService {
     return { quiz };
   }
 
+  // Save a flashcard for the authenticated user
+  async saveFlashcard(
+    userId: string,
+    question: string,
+    answer: string
+  ): Promise<{ id: string; question: string; answer: string; created_at: string }> {
+    const { data, error } = await this.supabase
+      .from('student_flashcards')
+      .insert({
+        user_id: userId,
+        question,
+        answer
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Get all saved flashcards for the authenticated user
+  async getFlashcards(
+    userId: string
+  ): Promise<{ id: string; question: string; answer: string; created_at: string }[]> {
+    const { data, error } = await this.supabase
+      .from('student_flashcards')
+      .select('id, question, answer, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
   // Helper: Call Azure OpenAI API
   private async callAzureOpenAI(prompt: string): Promise<string> {
     const base = process.env.AZURE_API_BASE!;

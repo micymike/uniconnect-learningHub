@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -6,6 +6,35 @@ import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('ai')
 export class AIController {
   constructor(private readonly aiService: AIService) {}
+
+  /**
+   * POST /ai/save-flashcard
+   * Save a flashcard for the authenticated user.
+   * Body: { question: string, answer: string }
+   * Returns: { id, question, answer, created_at }
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('save-flashcard')
+  async saveFlashcard(
+    @Req() req,
+    @Body('question') question: string,
+    @Body('answer') answer: string
+  ) {
+    const userId = req.user.userId;
+    return await this.aiService.saveFlashcard(userId, question, answer);
+  }
+
+  /**
+   * GET /ai/flashcards
+   * Get all saved flashcards for the authenticated user.
+   * Returns: [{ id, question, answer, created_at }]
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('flashcards')
+  async getFlashcards(@Req() req) {
+    const userId = req.user.userId;
+    return await this.aiService.getFlashcards(userId);
+  }
 
   /**
    * POST /ai/agents-chat
