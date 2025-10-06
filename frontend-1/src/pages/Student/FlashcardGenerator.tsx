@@ -3,13 +3,15 @@ import {
   Brain, Upload, FileText, Play, RotateCcw, Trophy, Target,
   Clock, Star, CheckCircle, X, Plus, Eye, Download, Trash2,
   BookOpen, Zap, Award, Gamepad2, MessageCircle, Lightbulb,
-  Users, Timer, Flame
+  Users, Timer, Flame, Save
 } from 'lucide-react';
+import Toast from "../../components/Toast";
 
 type Flashcard = {
   question: string;
   answer: string;
   explanation?: string;
+  saved?: boolean | "loading";
 };
 
 const api_url =
@@ -29,6 +31,49 @@ export default function FlashcardGenerator() {
   const [showModal, setShowModal] = useState(false);
   const [modalInput, setModalInput] = useState("5");
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Save flashcard
+  const saveFlashcard = async (idx: number) => {
+    const fc = flashcards[idx];
+    setFlashcards((prev) =>
+      prev.map((f, i) =>
+        i === idx ? { ...f, saved: "loading" } : f
+      )
+    );
+    try {
+      const token = localStorage.getItem("token") || "";
+      const response = await fetch(`${api_url}/ai/save-flashcard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: fc.question,
+          answer: fc.answer,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save flashcard");
+      }
+      setFlashcards((prev) =>
+        prev.map((f, i) =>
+          i === idx ? { ...f, saved: true } : f
+        )
+      );
+      setToast({ type: "success", message: "Flashcard saved!" });
+    } catch (err: any) {
+      setFlashcards((prev) =>
+        prev.map((f, i) =>
+          i === idx ? { ...f, saved: false } : f
+        )
+      );
+      setToast({ type: "error", message: err.message || "Failed to save flashcard" });
+    }
+  };
 
   // Game mode state
   const [gameMode, setGameMode] = useState(false);
@@ -293,6 +338,7 @@ export default function FlashcardGenerator() {
   };
 
   return (
+    <div>
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -580,13 +626,31 @@ export default function FlashcardGenerator() {
                         <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                         <span><span className="font-semibold">Answer:</span> {fc.answer}</span>
                       </div>
-                      <button
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
-                        onClick={() => explainFlashcard(idx)}
-                      >
-                        <Lightbulb className="h-4 w-4" />
-                        Explain
-                      </button>
+                      <div className="flex gap-2 mb-2">
+                        <button
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+                          onClick={() => explainFlashcard(idx)}
+                        >
+                          <Lightbulb className="h-4 w-4" />
+                          Explain
+                        </button>
+                        <button
+                          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 flex items-center gap-2 ${
+                            fc.saved === true
+                              ? "opacity-60 cursor-not-allowed"
+                              : ""
+                          }`}
+                          onClick={() => saveFlashcard(idx)}
+                          disabled={fc.saved === true || fc.saved === "loading"}
+                        >
+                          <Save className="h-4 w-4" />
+                          {fc.saved === true
+                            ? "Saved"
+                            : fc.saved === "loading"
+                            ? "Saving..."
+                            : "Save"}
+                        </button>
+                      </div>
                       {fc.explanation && (
                         <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 text-orange-200 rounded-xl text-sm">
                           <div className="flex items-start gap-2">
@@ -670,7 +734,16 @@ export default function FlashcardGenerator() {
             </div>
           </div>
         )}
-      </div>
+      {/* Toast notification */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
-  );
+    </div>
+      </div>
+  )
 }
