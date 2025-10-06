@@ -1,0 +1,31 @@
+# Test Push Subscription Endpoint with curl
+
+Replace the following placeholders before running:
+- <TOKEN>: Your JWT access token (from browser localStorage after login)
+- <SUBSCRIPTION_JSON>: The push subscription object as a JSON string
+
+Example curl command:
+```
+curl -X POST http://localhost:3000/api/notifications/push-subscription \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"subscription": <SUBSCRIPTION_JSON>}'
+```
+
+Example with dummy subscription:
+```
+curl -X POST http://localhost:3000/api/notifications/push-subscription \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{"subscription": {"endpoint":"https://fcm.googleapis.com/fcm/send/abc123","keys":{"p256dh":"...","auth":"..."}}}'
+```
+
+How to get your token:
+- Log in as a user in the frontend
+- Open browser dev tools > Console
+- Run: localStorage.getItem('token')
+- Copy the value and use as <TOKEN>
+
+How to get your subscription:
+- In your frontend code, log the subscription object before sending it to the backend
+- Or, use a dummy object for testing as shown above

@@ -17,9 +17,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Return all relevant user info from JWT payload
+    // Support both 'userId' and 'sub' as user ID
     return {
-      userId: payload.userId,
+      userId: payload.userId || payload.sub,
       email: payload.email,
       full_name: payload.full_name,
       role: payload.role,

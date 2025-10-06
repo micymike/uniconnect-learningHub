@@ -218,14 +218,39 @@ export default function NotificationPage() {
               </span>
             )}
           </h1>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="text-orange-400 hover:text-orange-300 text-sm font-medium"
-            >
-              Mark all as read
-            </button>
-          )}
+          <div className="flex gap-3 items-center">
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="text-orange-400 hover:text-orange-300 text-sm font-medium"
+              >
+                Mark all as read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem("token") || "";
+                    const res = await fetch(`${API_URL}/notifications/clear-all`, {
+                      method: "DELETE",
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                      setNotifications([]);
+                    } else {
+                      setError("Failed to clear notifications");
+                    }
+                  } catch (err) {
+                    setError("Failed to clear notifications");
+                  }
+                }}
+                className="text-red-400 hover:text-red-300 text-sm font-medium"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
 
         {success && (

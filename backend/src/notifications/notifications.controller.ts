@@ -1,12 +1,36 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto, NotificationFilterDto } from './dto/notification.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MultiAuthGuard } from '../auth/guards/multi-auth.guard';
 
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(MultiAuthGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+  @Post('push-subscription')
+  async registerPushSubscription(@Request() req, @Body() body: { subscription: any }) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    if (!body.subscription) {
+      throw new Error('Missing subscription object');
+    }
+    // Upsert subscription in user_push_subscriptions table
+    const { data, error } = await this.notificationsService['supabase']
+      .from('user_push_subscriptions')
+      .upsert({
+        user_id: userId,
+        subscription: body.subscription,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      .select()
+      .single();
+    if (error) {
+      throw new Error('Failed to save push subscription: ' + error.message);
+    }
+    return { message: 'Push subscription registered', subscription: data };
+  }
 
   @Get()
   async getUserNotifications(@Request() req, @Query() filter: NotificationFilterDto) {
@@ -46,6 +70,17 @@ export class NotificationsController {
     }
     await this.notificationsService.markAllAsRead(userId);
     return { message: 'All notifications marked as read' };
+  }
+
+  // Clear all notifications for the authenticated user
+  @Delete('clear-all')
+  async clearAllNotifications(@Request() req) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    await this.notificationsService.clearAllNotifications(userId);
+    return { message: 'All notifications cleared' };
   }
 
   // Admin/System endpoints for creating notifications

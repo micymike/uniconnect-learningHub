@@ -34,6 +34,7 @@ import { useSocket } from './hooks/useSocket';
 import { useStudentNotifications, requestNotificationPermission } from './components/ChatNotification';
 import { initializeMobile } from './mobile';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import Toast from './components/Toast';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -143,6 +144,55 @@ function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const { socket } = useSocket(userId);
 
+  // Toast state for push notifications
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    const audio = new Audio('/notification.mp3');
+    audio.play().catch(() => {});
+  };
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "push-received") {
+          const { title, options } = event.data;
+          // Prefer body, fallback to title
+          setToast((options && options.body) || title || "Notification");
+          playNotificationSound();
+        }
+      });
+    }
+
+    // Real-time socket notifications
+    if (socket && userId) {
+      socket.on('assignment-due-soon', (data: any) => {
+        setToast(`📚 Assignment: ${data.title} - Due in ${data.hours_remaining} hours`);
+        playNotificationSound();
+      });
+      socket.on('study-session-starting', (data: any) => {
+        setToast(`👥 Study Session with ${data.partner_name} - Starting ${new Date(data.start_time).toLocaleTimeString()}`);
+        playNotificationSound();
+      });
+      socket.on('achievement-unlocked', (data: any) => {
+        setToast(`🏆 Achievement Unlocked! ${data.message}`);
+        playNotificationSound();
+      });
+      socket.on('new-message', (data: any) => {
+        setToast(`💬 New message from ${data.sender_name}: ${data.content.substring(0, 50)}${data.content.length > 50 ? '...' : ''}`);
+        playNotificationSound();
+      });
+      // Clean up listeners on unmount
+      return () => {
+        socket.off('assignment-due-soon');
+        socket.off('study-session-starting');
+        socket.off('achievement-unlocked');
+        socket.off('new-message');
+      };
+    }
+  }, [socket, userId]);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
@@ -162,6 +212,51 @@ function App() {
   useEffect(() => {
     initializeMobile();
     requestNotificationPermission();
+
+    // Push subscription logic
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('/sw.js').then(async (registration) => {
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        // Subscribe to push
+        const vapidPublicKey = 'BMne0peY92kuT7WtDEjCOMXMFoNk9OBKYuOJhHOblH5wfIrDJGw1G7ry693KgTgApZylrFYuME_2hoBUP-TpwYA';
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+        try {
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+
+          // Send subscription to backend
+          await fetch('/api/notifications/push-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ subscription })
+          });
+        } catch (err) {
+          console.error('Push subscription error:', err);
+        }
+      });
+    }
+
+    // Helper to convert VAPID key
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
   }, []);
 
   // Global notifications for students
@@ -170,6 +265,12 @@ function App() {
   return (
     <>
       <PWAInstallPrompt />
+      {toast && (
+        <Toast
+          message={toast}
+          onClose={() => setToast(null)}
+        />
+      )}
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<LandingPage />} />

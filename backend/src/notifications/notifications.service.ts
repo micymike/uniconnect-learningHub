@@ -3,15 +3,28 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Inject } from '@nestjs/common';
 import { CreateNotificationDto, UpdateNotificationDto, NotificationFilterDto } from './dto/notification.dto';
 import { Notification, CreateNotificationData } from './interfaces/notification.interface';
-import webpush from 'web-push';
+import * as webpush from 'web-push';
+import { createClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+  private supabase: SupabaseClient;
 
-  constructor(
-    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
-  ) {}
+ constructor() {
+    // Use service role key for bypassing RLS when needed
+    this.supabase = createClient(
+      process.env.SUPABASE_URL as string,
+      process.env.SUPABASE_SERVICE_ROLE_KEY as string, // Use SERVICE_ROLE_KEY, not anon key
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+  }
+
 
   async createNotification(createNotificationDto: CreateNotificationDto): Promise<Notification> {
     try {
@@ -28,13 +41,15 @@ export class NotificationsService {
 
       // Send web push notification to user
       try {
-        await this.sendPushNotification(createNotificationDto.user_id, {
-          title: createNotificationDto.title || 'Notification',
-          body: createNotificationDto.message || '',
-          icon: '/logo.png',
-          badge: '/logo.png',
-          data: { action_url: createNotificationDto.action_url || '/' }
-        });
+await this.sendPushNotification(createNotificationDto.user_id, {
+  title: createNotificationDto.title || 'Notification',
+  options: {
+    body: createNotificationDto.message || '',
+    icon: '/logo.png',
+    badge: '/logo.png',
+    data: { action_url: createNotificationDto.action_url || '/' }
+  }
+});
       } catch (pushErr) {
         this.logger.warn('Failed to send push notification:', pushErr);
       }
@@ -124,6 +139,23 @@ export class NotificationsService {
       }
     } catch (error) {
       this.logger.error('Error in markAllAsRead:', error);
+      throw error;
+    }
+  }
+
+  async clearAllNotifications(userId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        this.logger.error('Error clearing all notifications:', error);
+        throw new Error(`Failed to clear all notifications: ${error.message}`);
+      }
+    } catch (error) {
+      this.logger.error('Error in clearAllNotifications:', error);
       throw error;
     }
   }

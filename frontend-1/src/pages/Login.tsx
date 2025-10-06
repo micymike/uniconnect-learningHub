@@ -40,13 +40,24 @@ export default function Login() {
     if (accessToken) {
       // Decode the JWT token to get user info
       try {
-        const base64Url = accessToken.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        const userData = JSON.parse(jsonPayload);
+        let userData = null;
+        try {
+          const tokenParts = accessToken.split('.');
+          if (tokenParts.length !== 3) {
+            throw new Error("Malformed JWT token");
+          }
+          const base64Url = tokenParts[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          userData = JSON.parse(jsonPayload);
+        } catch (decodeError) {
+          throw new Error("Failed to decode JWT token");
+        }
         
         // Store token and user data
         localStorage.setItem("token", accessToken);
