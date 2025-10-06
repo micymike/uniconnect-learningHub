@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class UsersService {
   // Create a study partner request
   async createStudyPartnerRequest(requesterId: string, recipientId: string) {
     if (requesterId === recipientId) {
-      throw new Error("You cannot send a request to yourself.");
+      throw new BadRequestException("You cannot send a request to yourself.");
     }
 
     // Check for existing pending request
@@ -38,7 +38,7 @@ export class UsersService {
       .maybeSingle();
 
     if (existing) {
-      throw new Error("A pending request already exists.");
+      throw new ConflictException("A pending request already exists.");
     }
 
     // Insert new request
@@ -53,7 +53,7 @@ export class UsersService {
       .maybeSingle();
 
     if (error) {
-      throw new Error(`Failed to create request: ${error.message}`);
+      throw new BadRequestException(`Failed to create request: ${error.message}`);
     }
 
     return data;
@@ -72,7 +72,7 @@ export class UsersService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to fetch requests: ${error.message}`);
+      throw new BadRequestException(`Failed to fetch requests: ${error.message}`);
     }
 
     return data;
@@ -88,13 +88,13 @@ export class UsersService {
       .maybeSingle();
 
     if (reqError || !request) {
-      throw new Error("Request not found.");
+      throw new NotFoundException("Request not found.");
     }
     if (request.recipient_id !== userId) {
-      throw new Error("You are not authorized to respond to this request.");
+      throw new UnauthorizedException("You are not authorized to respond to this request.");
     }
     if (request.status !== 'pending') {
-      throw new Error("Request is not pending.");
+      throw new BadRequestException("Request is not pending.");
     }
 
     // Check for duplicate request with new status
@@ -107,7 +107,7 @@ export class UsersService {
       .maybeSingle();
 
     if (duplicate) {
-      throw new Error(`A request with this status already exists for these users.`);
+      throw new ConflictException(`A request with this status already exists for these users.`);
     }
 
     // Update request status
@@ -121,7 +121,7 @@ export class UsersService {
       .eq('status', 'pending');
 
     if (updateError) {
-      throw new Error(`Failed to update request: ${updateError.message}`);
+      throw new BadRequestException(`Failed to update request: ${updateError.message}`);
     }
 
     // If accepted, add to study_partners
@@ -141,7 +141,7 @@ export class UsersService {
           ]);
         
         if (partnerError && !partnerError.message.includes('duplicate key')) {
-          throw new Error(`Failed to create partnership: ${partnerError.message}`);
+          throw new BadRequestException(`Failed to create partnership: ${partnerError.message}`);
         }
       }
     }
@@ -156,13 +156,13 @@ export class UsersService {
       .eq('id', userId);
 
     if (profileError) {
-      throw new Error(`Failed to delete profile: ${profileError.message}`);
+      throw new BadRequestException(`Failed to delete profile: ${profileError.message}`);
     }
 
     const { error: authError } = await this.supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authError) {
-      throw new Error(`Failed to delete auth user: ${authError.message}`);
+      throw new BadRequestException(`Failed to delete auth user: ${authError.message}`);
     }
 
     return { message: 'User deleted successfully' };
@@ -202,7 +202,7 @@ export class UsersService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        throw new Error(`Failed to fetch users: ${error.message}`);
+        throw new BadRequestException(`Failed to fetch users: ${error.message}`);
       }
       return data;
     } else {
@@ -214,7 +214,7 @@ export class UsersService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        throw new Error(`Failed to fetch users: ${error.message}`);
+        throw new BadRequestException(`Failed to fetch users: ${error.message}`);
       }
       return data;
     }
@@ -223,7 +223,7 @@ export class UsersService {
   // Add a study partner relationship
   async addStudyPartner(userId: string, partnerId: string) {
     if (userId === partnerId) {
-      throw new Error("You cannot add yourself as a study partner.");
+      throw new BadRequestException("You cannot add yourself as a study partner.");
     }
     
     // Check if partnership already exists
@@ -234,7 +234,7 @@ export class UsersService {
     
     if (existing && existing.length > 0) {
       // Return a custom error message for frontend to handle gracefully
-      throw new Error("This user is already your study partner.");
+      throw new ConflictException("This user is already your study partner.");
     }
 
     // Create single relationship using admin client to bypass RLS
@@ -248,9 +248,9 @@ export class UsersService {
         error.message &&
         error.message.toLowerCase().includes("duplicate key value violates unique constraint")
       ) {
-        throw new Error("This user is already your study partner.");
+        throw new ConflictException("This user is already your study partner.");
       }
-      throw new Error(`Failed to add study partner: ${error.message}`);
+      throw new BadRequestException(`Failed to add study partner: ${error.message}`);
     }
 
     return data[0];
@@ -270,7 +270,7 @@ export class UsersService {
 
     if (error) {
       console.error('Error fetching partnerships:', error);
-      throw new Error(`Failed to fetch study partners: ${error.message}`);
+      throw new BadRequestException(`Failed to fetch study partners: ${error.message}`);
     }
 
     if (!partnerships || partnerships.length === 0) {
@@ -295,7 +295,7 @@ export class UsersService {
 
     if (profileError) {
       console.error('Error fetching partner profiles:', profileError);
-      throw new Error(`Failed to fetch partner profiles: ${profileError.message}`);
+      throw new BadRequestException(`Failed to fetch partner profiles: ${profileError.message}`);
     }
 
     return profiles || [];

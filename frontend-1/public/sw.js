@@ -52,11 +52,23 @@ self.addEventListener('push', function(event) {
     data = { title: 'Notification', options: {} };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Notification', {
-      icon: '/logo.png',
-      badge: '/logo.png',
-      ...data.options
-    })
+    (async () => {
+      // Show native notification
+      await self.registration.showNotification(data.title || 'Notification', {
+        icon: '/logo.png',
+        badge: '/logo.png',
+        ...data.options
+      });
+      // Post message to all clients for in-app UI
+      const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+      for (const client of allClients) {
+        client.postMessage({
+          type: 'push-received',
+          title: data.title,
+          options: data.options
+        });
+      }
+    })()
   );
 });
 
