@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import TestimonialCarousel from "../components/TestimonialCarousel";
 import { supabase } from "../lib/supabaseClient";
 
-const API_URL = "https://uniconnect-learninghub-backend.onrender.com/api";
+const API_URL = "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register" | "forgotPassword">("login");
@@ -175,7 +175,7 @@ export default function Login() {
                   className="w-full mb-4 flex items-center justify-center bg-white text-gray-800 font-semibold py-2 sm:py-3 rounded-xl shadow-lg border border-gray-300 hover:bg-gray-100 transition-all"
 onClick={() => {
   // Use environment variable for backend URL, fallback to prod or dev as needed
-  const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "https://uniconnect-learninghub-backend.onrender.com/api";
+  const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
   window.location.href = backendUrl + "/auth/google";
 }}
                   disabled={loading}
