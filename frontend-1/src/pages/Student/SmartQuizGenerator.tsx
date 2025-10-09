@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
 
 type QuizQuestion = {
   question: string;

@@ -15,7 +15,7 @@ type LearningPathItem = {
   description: string;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
 
 export default function StudentDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
