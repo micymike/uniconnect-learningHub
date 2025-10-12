@@ -165,51 +165,11 @@ export default function Login() {
             transition={{ duration: 0.5 }}
             className="bg-gray-800 p-4 sm:p-8 rounded-2xl shadow-xl w-full max-w-xs sm:max-w-md border border-gray-700"
           >
-            <div className="text-center mb-8">
-              {/* Google OAuth Button */}
-              {mode === "login" && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  className="w-full mb-4 flex items-center justify-center bg-white text-gray-800 font-semibold py-2 sm:py-3 rounded-xl shadow-lg border border-gray-300 hover:bg-gray-100 transition-all"
-onClick={() => {
-  // Use environment variable for backend URL, fallback to prod or dev as needed
-  const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
-  window.location.href = backendUrl + "/auth/google";
-}}
-                  disabled={loading}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 48 48"
-                    width="24"
-                    height="24"
-                    className="mr-2"
-                  >
-                    <g>
-                      <path
-                        fill="#4285F4"
-                        d="M24 9.5c3.54 0 6.7 1.22 9.19 3.22l6.85-6.85C36.45 2.34 30.6 0 24 0 14.61 0 6.27 5.7 2.44 14.02l7.98 6.21C12.36 13.13 17.74 9.5 24 9.5z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M46.1 24.5c0-1.64-.15-3.22-.43-4.75H24v9.02h12.44c-.54 2.9-2.18 5.36-4.64 7.02l7.2 5.6C43.73 37.13 46.1 31.3 46.1 24.5z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M10.42 28.23c-1.13-3.36-1.13-6.97 0-10.33l-7.98-6.21C.8 15.7 0 19.74 0 24c0 4.26.8 8.3 2.44 12.31l7.98-6.21z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M24 48c6.6 0 12.45-2.17 16.85-5.93l-7.2-5.6c-2.01 1.35-4.6 2.13-7.65 2.13-6.26 0-11.64-3.63-13.58-8.73l-7.98 6.21C6.27 42.3 14.61 48 24 48z"
-                      />
-                      <path fill="none" d="M0 0h48v48H0z" />
-                    </g>
-                  </svg>
-                  {loading ? "Signing in..." : "Sign in with Google"}
-                </motion.button>
-              )}
+      
+               
+     
+                  
+             
               <motion.div
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
@@ -249,7 +209,6 @@ onClick={() => {
                     ? "Join us to unlock new possibilities" 
                     : "Enter your email to reset your password"}
               </p>
-            </div>
             
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <input
@@ -423,7 +382,7 @@ onClick={() => {
                 </div>
               ) : null}
             </div>
-          </motion.div>
+            </motion.div>
         </div>
       </div>
       <div className="w-full flex justify-center mt-6 mb-4 text-xs sm:text-sm text-gray-400">
