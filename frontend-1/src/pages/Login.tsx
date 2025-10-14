@@ -113,7 +113,8 @@ export default function Login() {
 
         const accessToken = data.session?.access_token || data.access_token;
         const refreshToken = data.session?.refresh_token || data.refresh_token;
-        const userRole = "student"; // Always set to student
+        // Check if user is super admin
+        const userRole = email.toLowerCase() === "mosesmichael878@gmail.com" ? "admin" : "student";
 
         if (!accessToken || !refreshToken) {
           throw new Error("Authentication tokens missing");

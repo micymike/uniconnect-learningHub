@@ -131,8 +131,13 @@ function RequireAuth({ children, requiredRole }: RequireAuthProps) {
 
   // If authenticated but wrong role, redirect to appropriate dashboard
   if (requiredRole && authState.userRole !== requiredRole) {
-    const redirectPath = authState.userRole === 'admin' ? '/admin' : '/student';
-    return <Navigate to={redirectPath} replace />;
+    // Allow admin access for both 'admin' and 'supaadmin' roles
+    if (requiredRole === 'admin' && (authState.userRole === 'admin' || authState.userRole === 'supaadmin')) {
+      // Allow access
+    } else {
+      const redirectPath = (authState.userRole === 'admin' || authState.userRole === 'supaadmin') ? '/admin' : '/student';
+      return <Navigate to={redirectPath} replace />;
+    }
   }
 
   // If all checks pass, render the protected content

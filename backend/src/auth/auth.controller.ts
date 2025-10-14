@@ -2,9 +2,12 @@ import { Controller, Post, Body, Get, UseGuards, Request, Param, Req, Res } from
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
 import { AuthGuard } from './guards/auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './roles.decorator';
 import { Response, Request as ExpressRequest } from 'express';
 import { UseGuards as PassportUseGuards } from '@nestjs/common';
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
+import { UserRole } from '../users/interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -57,6 +60,48 @@ export class AuthController {
     @Body() updates: { full_name?: string; role?: string },
   ) {
     return this.authService.updateProfile(req.user.id, updates);
+  }
+
+  // Invite Admin endpoint (SUPAADMIN only)
+  @Post('invite-admin')
+  @UseGuards(AuthGuard)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPAADMIN)
+  async inviteAdmin(@Request() req, @Body('email') email: string) {
+    // Check if user exists in Supabase
+    const supabaseAdmin = this.authService['supabaseAdmin'];
+    const { data: userList, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (error) {
+      return { success: false, message: 'Error listing users.' };
+    }
+    const existing = userList?.users?.find((u: any) => u.email === email);
+
+    if (existing) {
+      // Update role to admin in user_profiles
+      const { error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .update({ role: 'admin' })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (profileError) {
+        return { success: false, message: 'Failed to update admin role.' };
+      }
+      return { success: true, message: 'User role updated to admin.' };
+    }
+
+    // Register new admin user with temp password
+    try {
+      await this.authService.register({
+        email,
+        password: '@TempAdminPass1', // Should be changed by user
+        role: 'admin',
+        fullName: 'Invited Admin',
+      });
+      return { success: true, message: 'Admin user created successfully.' };
+    } catch (err) {
+      return { success: false, message: 'Failed to create admin user.' };
+    }
   }
 
   // Google OAuth endpoints

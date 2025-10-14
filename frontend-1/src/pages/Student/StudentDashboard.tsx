@@ -5,6 +5,7 @@ import "boxicons/css/boxicons.min.css";
 
 type Course = {
   _id?: string;
+  id?: string;
   title: string;
   description: string;
 };
@@ -39,7 +40,10 @@ export default function StudentDashboard() {
         if (!res.ok) throw new Error((await res.json()).message || "Error");
         return res.json();
       })
-      .then((data) => setCourses(data))
+      .then((data) => {
+        console.log("Fetched courses:", data);
+        setCourses(data);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -196,7 +200,7 @@ return (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-6 w-full">
             {courses.map((course, index) => (
               <div
-                key={course._id}
+                key={course.id || course._id}
                 className="bg-gray-800 rounded-xl p-3 sm:p-6 border border-gray-700 hover:border-orange-500 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl group animate-fade-in-up"
                 style={{ animationDelay: `${(index + 3) * 100}ms` }}
               >
@@ -225,7 +229,7 @@ return (
                   </div>
                   <button
                     className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300 transform hover:scale-105 flex items-center"
-                    onClick={() => navigate(`/student/courses/${course._id}`)}
+                    onClick={() => navigate(`/student/courses/${course._id || course.id}`)}
                   >
                     <span>Continue</span>
                     <i className="bx bx-right-arrow-alt ml-1"></i>

