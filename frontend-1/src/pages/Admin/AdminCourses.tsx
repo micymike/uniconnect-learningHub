@@ -2,11 +2,25 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_URL = (import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com") + "/api";
+const API_URL =
+ import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com" + "/api";
 type Course = {
-  id?: string; 
+  id?: string;
   title: string;
   description: string;
+  category: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  duration_hours: number;
+  price: number;
+  is_free: boolean;
+  thumbnail_url?: string;
+  intro_video_url?: string;
+  video_content_url?: string;
+  prerequisites: string;
+  learning_objectives: string[];
+  tags: string[];
+  status: 'draft' | 'published';
+  is_featured: boolean;
   created_at?: string;
   updated_at?: string;
   created_by?: string;
@@ -52,7 +66,23 @@ export default function AdminCourses() {
   const [filtered, setFiltered] = useState<Course[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [form, setForm] = useState({ title: "", description: "" });
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    category: "",
+    difficulty_level: "beginner" as const,
+    duration_hours: 0,
+    price: 0,
+    is_free: true,
+    thumbnail_url: "",
+    intro_video_url: "",
+    video_content_url: "",
+    prerequisites: "",
+    learning_objectives: [""],
+    tags: [""],
+    status: "draft" as const,
+    is_featured: false
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -154,18 +184,64 @@ export default function AdminCourses() {
     setModalMode(mode);
     setShowModal(true);
     if (mode === "edit" && course) {
-      console.log("Editing course:", course)
-      setForm({ title: course.title, description: course.description });
-      setEditingId(course.id || null);  
+      setForm({
+        title: course.title,
+        description: course.description,
+        category: course.category || "",
+        difficulty_level: course.difficulty_level || "beginner",
+        duration_hours: course.duration_hours || 0,
+        price: course.price || 0,
+        is_free: course.is_free ?? true,
+        thumbnail_url: course.thumbnail_url || "",
+        intro_video_url: course.intro_video_url || "",
+        video_content_url: course.video_content_url || "",
+        prerequisites: course.prerequisites || "",
+        learning_objectives: course.learning_objectives || [""],
+        tags: course.tags || [""],
+        status: course.status || "draft",
+        is_featured: course.is_featured || false
+      });
+      setEditingId(course.id || null);
     } else {
-      setForm({ title: "", description: "" });
+      setForm({
+        title: "",
+        description: "",
+        category: "",
+        difficulty_level: "beginner",
+        duration_hours: 0,
+        price: 0,
+        is_free: true,
+        thumbnail_url: "",
+        intro_video_url: "",
+        prerequisites: "",
+        learning_objectives: [""],
+        tags: [""],
+        status: "draft",
+        is_featured: false
+      });
       setEditingId(null);
     }
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setForm({ title: "", description: "" });
+    setForm({
+      title: "",
+      description: "",
+      category: "",
+      difficulty_level: "beginner",
+      duration_hours: 0,
+      price: 0,
+      is_free: true,
+      thumbnail_url: "",
+      intro_video_url: "",
+      video_content_url: "",
+      prerequisites: "",
+      learning_objectives: [""],
+      tags: [""],
+      status: "draft",
+      is_featured: false
+    });
     setEditingId(null);
   };
 
@@ -409,28 +485,78 @@ export default function AdminCourses() {
                   }}
                   className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transform transition-all duration-300"
                 >
-                  <div className="p-6 flex flex-col h-full">
+                  {course.thumbnail_url && (
+                    <div className="h-48 bg-gray-200 rounded-t-2xl overflow-hidden">
+                      <img 
+                        src={course.thumbnail_url} 
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col min-h-[400px]">
                     <div className="flex-1">
-                      <div className="flex justify-between items-start mb-4">
-                        <motion.h2 
-                          whileHover={{ color: "#f97316" }}
-                          className="text-xl font-bold text-gray-800 mb-2"
-                        >
-                          {course.title}
-                        </motion.h2>
-                        <div className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full">
-                          ID: {course.id ? course.id.substring(0, 8) : 'N/A'}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                            course.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {course.status || 'draft'}
+                          </span>
+                          {course.is_featured && (
+                            <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded-full">
+                              Featured
+                            </span>
+                          )}
+                          {course.is_free ? (
+                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
+                              Free
+                            </span>
+                          ) : (
+                            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                              ${course.price}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <p className="text-gray-600 mb-6">{course.description}</p>
+                      <motion.h2 
+                        whileHover={{ color: "#f97316" }}
+                        className="text-xl font-bold text-gray-800 mb-2"
+                      >
+                        {course.title}
+                      </motion.h2>
+                      <p className="text-gray-600 mb-3 line-clamp-3">{course.description}</p>
+                      <div className="space-y-2 text-sm text-gray-500">
+                        {course.category && (
+                          <div className="flex items-center">
+                            <span className="font-medium">Category:</span>
+                            <span className="ml-1 capitalize">{course.category}</span>
+                          </div>
+                        )}
+                        {course.difficulty_level && (
+                          <div className="flex items-center">
+                            <span className="font-medium">Level:</span>
+                            <span className="ml-1 capitalize">{course.difficulty_level}</span>
+                          </div>
+                        )}
+                        {course.duration_hours > 0 && (
+                          <div className="flex items-center">
+                            <span className="font-medium">Duration:</span>
+                            <span className="ml-1">{course.duration_hours}h</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-3 pt-4 border-t border-gray-100">
+                    <div className="flex gap-3 pt-4 mt-auto border-t border-gray-100">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-semibold transition-colors"
                         onClick={() => openModal("edit", course)}
-                        disabled={!course.id}
+                        
                       >
                         Edit
                       </motion.button>
@@ -439,7 +565,7 @@ export default function AdminCourses() {
                         whileTap={{ scale: 0.95 }}
                         className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2.5 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => course.id && handleDelete(course.id)}
-                        disabled={!course.id}
+                       
                       >
                         Delete
                       </motion.button>
@@ -465,10 +591,10 @@ export default function AdminCourses() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative mx-4"
+              className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl relative mx-4 max-h-[90vh] overflow-y-auto"
             >
               <button
-                className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl"
+                className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl z-10"
                 onClick={closeModal}
                 aria-label="Close"
               >
@@ -479,55 +605,306 @@ export default function AdminCourses() {
                 <div className="mt-2 w-16 h-1 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full"></div>
               </h2>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-gray-700 mb-2 font-medium">
-                    Course Title
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter course title"
-                    className="w-full p-4 rounded-xl bg-gray-50 border border-gray-200 text-black focus:ring-2 focus:ring-orange-300 focus:border-transparent"
-                    value={form.title}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, title: e.target.value }))
-                    }
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Basic Information */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Basic Information</h3>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Course Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Complete Web Development Bootcamp"
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.title}
+                      onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Category *</label>
+                    <select
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.category}
+                      onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      <option value="programming">Programming</option>
+                      <option value="design">Design</option>
+                      <option value="business">Business</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="data-science">Data Science</option>
+                      <option value="photography">Photography</option>
+                      <option value="music">Music</option>
+                      <option value="language">Language</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Difficulty Level *</label>
+                    <select
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.difficulty_level}
+                      onChange={(e) => setForm(f => ({ ...f, difficulty_level: e.target.value as any }))}
+                      required
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Duration (Hours) *</label>
+                    <input
+                      type="number"
+                      min="0.5"
+                      step="0.5"
+                      placeholder="e.g., 40"
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.duration_hours}
+                      onChange={(e) => setForm(f => ({ ...f, duration_hours: parseFloat(e.target.value) || 0 }))}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2 font-medium">Description *</label>
+                    <textarea
+                      placeholder="Provide a detailed description of what students will learn..."
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent min-h-[100px]"
+                      value={form.description}
+                      onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  
+                  {/* Pricing */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 mt-6">Pricing</h3>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="mr-2 rounded"
+                          checked={form.is_free}
+                          onChange={(e) => setForm(f => ({ ...f, is_free: e.target.checked, price: e.target.checked ? 0 : f.price }))}
+                        />
+                        <span className="text-gray-700 font-medium">Free Course</span>
+                      </label>
+                    </div>
+                    {!form.is_free && (
+                      <div className="w-full md:w-1/2">
+                        <label className="block text-gray-700 mb-2 font-medium">Price ($)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="e.g., 99.99"
+                          className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                          value={form.price}
+                          onChange={(e) => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Media */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 mt-6">Media</h3>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Thumbnail URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/thumbnail.jpg"
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.thumbnail_url}
+                      onChange={(e) => setForm(f => ({ ...f, thumbnail_url: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Intro Video URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.intro_video_url}
+                      onChange={(e) => setForm(f => ({ ...f, intro_video_url: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2 font-medium">Main Course Video URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://youtube.com/watch?v=... (Main course content)"
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.video_content_url}
+                      onChange={(e) => setForm(f => ({ ...f, video_content_url: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">This video will be embedded for students to watch</p>
+                  </div>
+                  
+                  {/* Course Details */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 mt-6">Course Details</h3>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2 font-medium">Prerequisites</label>
+                    <textarea
+                      placeholder="List any prerequisites or requirements..."
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent min-h-[80px]"
+                      value={form.prerequisites}
+                      onChange={(e) => setForm(f => ({ ...f, prerequisites: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2 font-medium">Learning Objectives</label>
+                    {form.learning_objectives.map((objective, index) => (
+                      <div key={index} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          placeholder={`Learning objective ${index + 1}`}
+                          className="flex-1 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                          value={objective}
+                          onChange={(e) => {
+                            const newObjectives = [...form.learning_objectives];
+                            newObjectives[index] = e.target.value;
+                            setForm(f => ({ ...f, learning_objectives: newObjectives }));
+                          }}
+                        />
+                        {form.learning_objectives.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newObjectives = form.learning_objectives.filter((_, i) => i !== index);
+                              setForm(f => ({ ...f, learning_objectives: newObjectives }));
+                            }}
+                            className="text-red-500 hover:text-red-700 p-2"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, learning_objectives: [...f.learning_objectives, ""] }))}
+                      className="text-orange-500 hover:text-orange-700 text-sm font-medium"
+                    >
+                      + Add Learning Objective
+                    </button>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2 font-medium">Tags</label>
+                    {form.tags.map((tag, index) => (
+                      <div key={index} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          placeholder={`Tag ${index + 1}`}
+                          className="flex-1 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                          value={tag}
+                          onChange={(e) => {
+                            const newTags = [...form.tags];
+                            newTags[index] = e.target.value;
+                            setForm(f => ({ ...f, tags: newTags }));
+                          }}
+                        />
+                        {form.tags.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTags = form.tags.filter((_, i) => i !== index);
+                              setForm(f => ({ ...f, tags: newTags }));
+                            }}
+                            className="text-red-500 hover:text-red-700 p-2"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, tags: [...f.tags, ""] }))}
+                      className="text-orange-500 hover:text-orange-700 text-sm font-medium"
+                    >
+                      + Add Tag
+                    </button>
+                  </div>
+                  
+                  {/* Publishing Options */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 mt-6">Publishing Options</h3>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Status</label>
+                    <select
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      value={form.status}
+                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value as any }))}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2 rounded"
+                        checked={form.is_featured}
+                        onChange={(e) => setForm(f => ({ ...f, is_featured: e.target.checked }))}
+                      />
+                      <span className="text-gray-700 font-medium">Featured Course</span>
+                    </label>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-gray-700 mb-2 font-medium">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Enter course description"
-                    className="w-full p-4 rounded-xl bg-gray-50 border border-gray-200 text-black focus:ring-2 focus:ring-orange-300 focus:border-transparent min-h-[120px]"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, description: e.target.value }))
-                    }
-                    required
-                  />
+                
+                <div className="flex space-x-4 pt-6 border-t">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-6 rounded-lg font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 py-3 px-6 rounded-lg font-semibold text-white shadow-lg"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center">
+                        <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></span>
+                        Processing...
+                      </span>
+                    ) : modalMode === "edit" ? (
+                      "Update Course"
+                    ) : (
+                      "Create Course"
+                    )}
+                  </motion.button>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 py-4 px-6 rounded-xl font-semibold text-white w-full shadow-lg"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></span>
-                      Processing...
-                    </span>
-                  ) : modalMode === "edit" ? (
-                    "Update Course"
-                  ) : (
-                    "Create Course"
-                  )}
-                </motion.button>
               </form>
-              </motion.div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

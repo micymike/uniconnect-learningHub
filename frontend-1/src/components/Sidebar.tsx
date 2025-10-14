@@ -37,6 +37,7 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 
@@ -122,6 +123,29 @@ export default function Sidebar() {
                   </button>
                 </li>
               ))}
+              {/* Admin Panel Button for Admin */}
+              {((
+                (user?.email && user?.email.toLowerCase() === "mosesmichael878@gmail.com") ||
+                (user?.user_metadata?.role && (user?.user_metadata?.role.toLowerCase() === "admin" || user?.user_metadata?.role.toLowerCase() === "supaadmin")) ||
+                (typeof localStorage !== "undefined" && localStorage.getItem("userRole") && (localStorage.getItem("userRole")!.toLowerCase() === "admin" || localStorage.getItem("userRole")!.toLowerCase() === "supaadmin"))
+              )) && (
+                <li className="animate-fade-in-up" style={{ animationDelay: `${(navItems.length + 1) * 50}ms` }}>
+                  <button
+                    className={`flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 text-left group relative overflow-hidden bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105`}
+                    onClick={() => {
+                      try {
+                        navigate("/admin", { replace: true });
+                        setOpen(false);
+                      } catch (e) {
+                        window.location.href = "/admin";
+                      }
+                    }}
+                  >
+                    <i className="bx bx-cog text-xl mr-3 transition-transform duration-300 group-hover:scale-110"></i>
+                    <span className="font-medium">Admin Panel</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 

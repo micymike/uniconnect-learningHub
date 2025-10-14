@@ -10,10 +10,10 @@ async function seedAdmin() {
   const authService = app.get(AuthService);
   const config = app.get(ConfigService);
 
-  const adminEmail = 'uniconnect693@gmail.com';
-  const adminPassword = '@13353Mike';
-  const adminRole = 'admin';
-  const adminFullName = 'Admin User';
+  const adminEmail = 'mosesmichael878@gmail.com';
+  const adminPassword = '@TempSupaAdminPass1'; // Set a secure temp password, should be changed by user
+  const adminRole = 'supaadmin';
+  const adminFullName = 'Supaadmin User';
 
   // Check if user exists in Supabase Auth
   const supabaseAdmin = authService['supabaseAdmin'];

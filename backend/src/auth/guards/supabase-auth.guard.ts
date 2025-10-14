@@ -25,12 +25,19 @@ export class SupabaseAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token');
       }
 
+      // Determine role - super admin gets admin role
+      let userRole = user.user_metadata?.role || 'student';
+      if (user.email === 'mosesmichael878@gmail.com') {
+        userRole = 'admin';
+      }
+
       // Attach user to request
       request.user = {
+        id: user.id,
         userId: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
-        role: user.user_metadata?.role || 'student',
+        role: userRole,
         sub: user.id,
       };
 
