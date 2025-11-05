@@ -9,5 +9,5 @@ services:
       - "80:80"
     environment:
       # Add any required environment variables here
-      # - NODE_ENV=production
+      - NODE_ENV=production
     restart: unless-stopped
