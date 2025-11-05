@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "5502:5502"
     environment:
       # Add any required environment variables here
       - NODE_ENV=production
