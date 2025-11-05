@@ -10,7 +10,7 @@ const navItems = [
 
 const aiTools = [
   { label: "Study Buddy", path: "/student/chatbot", icon: "bx bx-message-dots" },
-
+  { label: "MathGPT", path: "/student/mathgpt", icon: "bx bx-math" },
   { label: "AI Note Taker", path: "/student/ai-note-taker", icon: "bx bx-microphone" },
   { label: "Matching Game", path: "/student/matching-game", icon: "bx bx-game" },
   { label: "Flashcards", path: "/student/flashcards", icon: "bx bx-collection" },
