@@ -7,5 +7,5 @@ services:
     env_file:
       - .env
     ports:
-      - "3004:3004"
+      - "5501:5501"
     # No local database service needed; backend connects to Supabase via environment variables
