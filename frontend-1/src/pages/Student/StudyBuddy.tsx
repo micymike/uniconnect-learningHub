@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import "boxicons/css/boxicons.min.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://app.uniconnect-learninghub.co.ke/api";
 const MAX_MESSAGES = 50; // Limit message history
 
 interface Message {

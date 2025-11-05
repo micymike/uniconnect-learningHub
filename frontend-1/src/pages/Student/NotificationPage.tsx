@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSocket } from "../../hooks/useSocket";
 import { useStudentNotifications, requestNotificationPermission } from "../../components/ChatNotification";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://app.uniconnect-learninghub.co.ke/api";
 
 type NotificationType = 'study_partner_request' | 'assignment_due' | 'course_update' | 'study_session' | 'achievement' | 'message';
 

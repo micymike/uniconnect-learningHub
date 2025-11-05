@@ -53,7 +53,7 @@ const TaskScheduler: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch(`https://uniconnect-learninghub-backend-yspz.onrender.com/api/task-scheduler/schedules?userId=${userId}`);
+      const response = await fetch(`https://app.uniconnect-learninghub.co.ke/api/task-scheduler/schedules?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setSchedules(Array.isArray(data) ? data : []);
@@ -71,7 +71,7 @@ const TaskScheduler: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`https://uniconnect-learninghub-backend-yspz.onrender.com/api/task-scheduler/create?userId=${userId}`, {
+      const response = await fetch(`https://app.uniconnect-learninghub.co.ke/api/task-scheduler/create?userId=${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userInput, preferences })

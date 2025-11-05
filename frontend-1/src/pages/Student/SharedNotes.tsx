@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'boxicons/css/boxicons.min.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-backend-yspz.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://app.uniconnect-learninghub.co.ke/api';
 
 interface SharedNote {
   id: string;
