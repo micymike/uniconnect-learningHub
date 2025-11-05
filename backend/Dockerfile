@@ -27,7 +27,7 @@ COPY --from=builder /app/dist ./dist
 # Copy any necessary assets (if needed, add COPY for public/static folders here)
 
 # Expose the port (default 3004, can be overridden by PORT env)
-EXPOSE 3004
+EXPOSE 5501
 
 # Use environment variables at runtime (do NOT bake .env into image)
 CMD ["node", "dist/main"]
