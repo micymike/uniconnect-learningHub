@@ -31,3 +31,5 @@ EXPOSE 5501
 
 # Use environment variables at runtime (do NOT bake .env into image)
 CMD ["node", "dist/main"]
+
+

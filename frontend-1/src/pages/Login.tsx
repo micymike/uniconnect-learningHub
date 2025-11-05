@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabaseClient";
 
 const API_URL = process.env.NODE_ENV === "development"
   ? "http://localhost:3004/api"
-  : "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
+  : "https://app.uniconnect-learninghub.co.ke/api";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register" | "forgotPassword">("login");

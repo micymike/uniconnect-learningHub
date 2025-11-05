@@ -29,7 +29,7 @@ type Note = {
 
 const api_url =
 import.meta.env.VITE_API_URL ||
-  "https://uniconnect-learninghub-backend-yspz.onrender.com/api";
+  "https://app.uniconnect-learninghub.co.ke/api";
 
 const CELEBRATE = ["🎉", "👏", "🥳", "🏆", "💡"];
 
