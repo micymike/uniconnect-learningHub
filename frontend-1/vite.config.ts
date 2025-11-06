@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
-    allowedHosts: ['uniconnect-learninghub-8s1j.onrender.com']
+    allowedHosts: ['www.uniconnect-learninghub.co.ke']
   },
   preview: {
     port: 3000,
