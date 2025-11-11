@@ -1,13 +1,12 @@
-version: '3.8'
-
+version: "3.9"
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: frontend-1-frontend
+    container_name: frontend-1
     ports:
       - "5503:5503"
-    environment:
-      # Add any required environment variables here
-      - NODE_ENV=production
-    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`www.uniconnect-learninghub.co.ke`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=5503"
