@@ -1,11 +1,17 @@
-version: '3.8'
+version: "3.9"
 
 services:
   backend:
     build: .
-    container_name: uniconnect-backend
     env_file:
       - .env
+    container_name: uniconnect-backend
+    restart: unless-stopped
     ports:
-      - "5501:5501"
-    # No local database service needed; backend connects to Supabase via environment variables
+      - "5000:5000" # only if you want to test locally
+    networks:
+      - uniconnect_net
+
+networks:
+  uniconnect_net:
+    external: true
