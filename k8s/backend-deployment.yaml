@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: uniconnectlearninghub/uniconnect-backend:v1.0.0 # <-- Replace with your image
+          ports:
+            - containerPort: 5501
+          envFrom:
+            - secretRef:
+                name: backend-env
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: / # Adjust if you have a health endpoint
+              port: 5501
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: / # Adjust if you have a health endpoint
+              port: 5501
+            initialDelaySeconds: 30
+            periodSeconds: 10

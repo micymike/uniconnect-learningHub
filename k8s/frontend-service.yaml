@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: uniconnect-frontend
+  labels:
+    app: uniconnect-frontend
+spec:
+  selector:
+    app: uniconnect-frontend
+  ports:
+    - protocol: TCP
+      port: 5503
+      targetPort: 5503
+  type: ClusterIP
