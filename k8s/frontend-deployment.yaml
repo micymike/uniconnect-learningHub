@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image:  uniconnectlearninghub/uniconnect-frontend:v1.0.0 # <-- Replace with your image
+          image:  micymike/uniconnect-frontend:v1.0.0 # <-- Replace with your image
           ports:
             - containerPort: 5503
           resources:

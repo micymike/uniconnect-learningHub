@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: uniconnectlearninghub/uniconnect-backend:v1.0.0 # <-- Replace with your image
+          image: micymike/uniconnect-backend:v1.0.0 
           ports:
             - containerPort: 5501
           envFrom:
