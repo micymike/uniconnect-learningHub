@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import VideoGenerator from "../../components/VideoGenerator";
 import "boxicons/css/boxicons.min.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://app.uniconnect-learninghub.co.ke/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-jqn0.onrender.com/api";
 
 interface MathStep {
   step: number;

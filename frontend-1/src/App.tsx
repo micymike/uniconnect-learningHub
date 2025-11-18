@@ -28,6 +28,7 @@ import StudySpace from './pages/Student/StudySpace';
 import NotificationPage from './pages/Student/NotificationPage';
 import AINoteTaker from './pages/Student/AINoteTaker';
 import MathGPT from './pages/Student/MathGPT';
+import AITeacher from './pages/Student/AITeacher';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 
@@ -329,6 +330,7 @@ function App() {
           <Route path="study-space" element={<StudySpace />} />
           <Route path="ai-note-taker" element={<AINoteTaker />} />
           <Route path="mathgpt" element={<MathGPT />} />
+          <Route path="ai-teacher" element={<AITeacher />} />
           <Route path="notifications" element={<NotificationPage />} />
         </Route>
       </Routes>

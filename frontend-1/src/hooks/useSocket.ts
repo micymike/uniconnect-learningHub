@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://app.uniconnect-learninghub.co.ke/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-jqn0.onrender.com/api';
 
 export const useSocket = (userId: string | null) => {
   const [socket, setSocket] = useState<Socket | null>(null);

@@ -36,7 +36,7 @@ root.render(
         // Send subscription to backend
         const token = localStorage.getItem('token');
         if (token && subscription) {
-          await fetch(((import.meta as any).env?.VITE_API_URL || 'https://app.uniconnect-learninghub.co.ke/api') + '/notifications/push/subscribe', {
+          await fetch(((import.meta as any).env?.VITE_API_URL || 'https://uniconnect-learninghub-jqn0.onrender.com/api') + '/notifications/push/subscribe', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

@@ -1,14 +1,16 @@
-import { Controller, Post, Get, Body, UseGuards, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, UploadedFile, UseInterceptors, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
 import { MathGPTService } from './mathgpt.service';
+import { AITeacherService } from './ai-teacher.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('ai')
 export class AIController {
   constructor(
     private readonly aiService: AIService,
-    private readonly mathGPTService: MathGPTService
+    private readonly mathGPTService: MathGPTService,
+    private readonly aiTeacherService: AITeacherService
   ) {}
 
   /**
@@ -191,5 +193,56 @@ export class AIController {
     const solution = await this.mathGPTService.solveMathProblem(userId, problem, image);
     const videoScript = await this.mathGPTService.generateVideoScript(solution);
     return { solution, videoScript };
+  }
+
+  // AI Teacher: Start teaching session
+  @UseGuards(JwtAuthGuard)
+  @Post('teacher/start')
+  @UseInterceptors(FileInterceptor('pdf', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async startTeaching(
+    @Req() req,
+    @Body('topic') topic?: string,
+    @UploadedFile() pdf?: Express.Multer.File,
+  ): Promise<{ sessionId: string; introduction: string; blackboardContent: string }> {
+    const userId = req.user.userId;
+    let pdfContent;
+    if (pdf) {
+      pdfContent = await this.aiTeacherService.processPDF(pdf);
+    }
+    return await this.aiTeacherService.startTeachingSession(userId, topic, pdfContent);
+  }
+
+  // AI Teacher: Continue conversation
+  @UseGuards(JwtAuthGuard)
+  @Post('teacher/continue')
+  async continueTeaching(
+    @Req() req,
+    @Body('sessionId') sessionId: string,
+    @Body('message') message: string,
+    @Body('isInterruption') isInterruption: boolean = false,
+  ): Promise<{ response: string; blackboardUpdate?: string; suggestedNotes?: string }> {
+    return await this.aiTeacherService.continueTeaching(sessionId, message, isInterruption);
+  }
+
+  // AI Teacher: Save student notes
+  @UseGuards(JwtAuthGuard)
+  @Post('teacher/notes')
+  async saveNotes(
+    @Req() req,
+    @Body('sessionId') sessionId: string,
+    @Body('notes') notes: string,
+  ): Promise<{ success: boolean }> {
+    await this.aiTeacherService.saveStudentNotes(sessionId, notes);
+    return { success: true };
+  }
+
+  // AI Teacher: Get session history
+  @UseGuards(JwtAuthGuard)
+  @Get('teacher/session/:id')
+  async getSession(
+    @Req() req,
+    @Param('id') sessionId: string,
+  ): Promise<{ conversation: string[]; blackboard: string[]; notes: any[]; topic: string }> {
+    return await this.aiTeacherService.getSessionHistory(sessionId);
   }
 }
