@@ -75,6 +75,7 @@ export class AITeacherService {
     response: string;
     blackboardUpdate?: string;
     suggestedNotes?: string;
+    adaptiveHints?: string;
   }> {
     // Get session data
     const { data: session, error } = await this.supabase
@@ -89,22 +90,32 @@ export class AITeacherService {
     const topic = session.topic;
     const pdfContent = session.pdf_content;
 
-    // Handle interruption
+    // Handle interruption and adaptive teaching
     const interruptionContext = isInterruption 
-      ? "The student has interrupted you with a question or comment. Acknowledge this politely and address their input before continuing."
+      ? "The student has interrupted you with a question or comment. Acknowledge this politely and address their input before continuing. Be encouraging about their engagement."
       : "";
+    
+    // Analyze student engagement and confusion
+    const confusionKeywords = ['confused', 'don\'t understand', 'what', 'how', 'why', 'explain', 'help'];
+    const isConfused = confusionKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+    
+    const adaptiveContext = isConfused 
+      ? "The student seems confused. Provide a simpler explanation with examples. Ask if they need clarification on specific parts."
+      : "The student seems to be following along well. You can continue with the lesson or dive deeper if appropriate.";
 
     const teachingPrompt = `You are an AI Teacher avatar teaching about ${topic}.
     ${pdfContent ? `You have this material to reference: ${pdfContent.substring(0, 1500)}...` : ''}
     ${interruptionContext}
+    ${adaptiveContext}
     
     Conversation so far:
     ${history.slice(-6).join('\n')}
     
     Student says: ${userMessage}
     
-    Respond as a friendly, encouraging teacher. Be conversational and engaging. If they ask questions, answer them clearly.
-    If they seem confused, offer to explain differently. Keep responses focused and not too long.`;
+    Respond as a friendly, encouraging teacher. Be conversational and engaging. Use natural speech patterns with appropriate pauses.
+    If they ask questions, answer them clearly with examples. If they seem confused, break down concepts into smaller parts.
+    Keep responses focused (2-3 sentences max) and encourage questions. Use markdown formatting for better readability.`;
 
     const response = await this.callAzureOpenAI(teachingPrompt);
 
@@ -122,9 +133,18 @@ export class AITeacherService {
     const notesPrompt = `Based on this teaching exchange, suggest 1-2 key points the student should write in their notes:
     Topic: ${topic}
     Discussion: ${userMessage} - ${response.substring(0, 200)}
-    Format as brief bullet points.`;
+    Format as brief bullet points using markdown.`;
 
     const suggestedNotes = await this.callAzureOpenAI(notesPrompt);
+    
+    // Generate adaptive hints if student seems confused
+    let adaptiveHints;
+    if (isConfused) {
+      const hintsPrompt = `The student seems confused about ${topic}. Provide 2-3 helpful study tips or alternative ways to understand this concept:
+      Recent discussion: ${userMessage} - ${response.substring(0, 150)}
+      Format as encouraging, actionable tips.`;
+      adaptiveHints = await this.callAzureOpenAI(hintsPrompt);
+    }
 
     // Update session
     const updatedHistory = [...history, `Student: ${userMessage}`, `Teacher: ${response}`];
@@ -143,7 +163,8 @@ export class AITeacherService {
     return {
       response,
       blackboardUpdate,
-      suggestedNotes
+      suggestedNotes,
+      adaptiveHints
     };
   }
 
@@ -201,6 +222,60 @@ export class AITeacherService {
     return data.text;
   }
 
+  async getSessionDashboard(userId: string): Promise<{
+    recentSessions: any[];
+    totalSessions: number;
+    favoriteTopics: string[];
+    progressStats: any;
+  }> {
+    const { data: sessions, error } = await this.supabase
+      .from('ai_teacher_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    const totalSessions = sessions?.length || 0;
+    const topicCounts = sessions?.reduce((acc, session) => {
+      acc[session.topic] = (acc[session.topic] || 0) + 1;
+      return acc;
+    }, {}) || {};
+    
+    const favoriteTopics = Object.entries(topicCounts)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([topic]) => topic);
+
+    return {
+      recentSessions: sessions || [],
+      totalSessions,
+      favoriteTopics,
+      progressStats: {
+        averageNotesPerSession: sessions?.reduce((acc, s) => acc + (s.notes?.length || 0), 0) / totalSessions || 0,
+        totalConversations: sessions?.reduce((acc, s) => acc + (s.conversation_history?.length || 0), 0) || 0
+      }
+    };
+  }
+
+  async submitSessionFeedback(
+    sessionId: string,
+    rating: number,
+    feedback?: string
+  ): Promise<void> {
+    const { error } = await this.supabase
+      .from('ai_teacher_sessions')
+      .update({
+        feedback_rating: rating,
+        feedback_text: feedback,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+  }
+
   private async callAzureOpenAI(prompt: string): Promise<string> {
     const base = process.env.AZURE_API_BASE!;
     const deployment = process.env.AZURE_API_MODEL!;
@@ -213,11 +288,13 @@ export class AITeacherService {
       endpoint,
       {
         messages: [
-          { role: 'system', content: 'You are a friendly, enthusiastic AI teacher. Be encouraging, clear, and engaging in your teaching style.' },
+          { role: 'system', content: 'You are Luna, a friendly AI teacher. Be encouraging, clear, and engaging. Use natural speech patterns with appropriate pauses. Format responses with markdown for clarity. Keep responses concise (2-3 sentences max) but informative. Add personality and warmth to your teaching.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 1024,
+        max_tokens: 2048,
         temperature: 0.7,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1
       },
       {
         headers: {

@@ -220,7 +220,7 @@ export class AIController {
     @Body('sessionId') sessionId: string,
     @Body('message') message: string,
     @Body('isInterruption') isInterruption: boolean = false,
-  ): Promise<{ response: string; blackboardUpdate?: string; suggestedNotes?: string }> {
+  ): Promise<{ response: string; blackboardUpdate?: string; suggestedNotes?: string; adaptiveHints?: string }> {
     return await this.aiTeacherService.continueTeaching(sessionId, message, isInterruption);
   }
 
@@ -244,5 +244,28 @@ export class AIController {
     @Param('id') sessionId: string,
   ): Promise<{ conversation: string[]; blackboard: string[]; notes: any[]; topic: string }> {
     return await this.aiTeacherService.getSessionHistory(sessionId);
+  }
+
+  // AI Teacher: Get dashboard
+  @UseGuards(JwtAuthGuard)
+  @Get('teacher/dashboard')
+  async getTeacherDashboard(
+    @Req() req,
+  ): Promise<{ recentSessions: any[]; totalSessions: number; favoriteTopics: string[]; progressStats: any }> {
+    const userId = req.user.userId;
+    return await this.aiTeacherService.getSessionDashboard(userId);
+  }
+
+  // AI Teacher: Submit feedback
+  @UseGuards(JwtAuthGuard)
+  @Post('teacher/feedback')
+  async submitFeedback(
+    @Req() req,
+    @Body('sessionId') sessionId: string,
+    @Body('rating') rating: number,
+    @Body('feedback') feedback?: string,
+  ): Promise<{ success: boolean }> {
+    await this.aiTeacherService.submitSessionFeedback(sessionId, rating, feedback);
+    return { success: true };
   }
 }
