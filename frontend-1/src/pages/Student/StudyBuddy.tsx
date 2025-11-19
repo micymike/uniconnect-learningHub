@@ -13,13 +13,28 @@ interface Message {
 }
 
 const StudyBuddy: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: "ai",
-      text: "Hi there! 👋 I'm your Study Buddy. I'm here to help you with your studies, answer questions, explain concepts, and support your learning journey. What would you like to explore today?",
-      timestamp: new Date(),
-    },
-  ]);
+  // Load messages from localStorage, or show welcome if none
+  const getInitialMessages = () => {
+    try {
+      const stored = localStorage.getItem("studyBuddyMessages");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Convert timestamp strings back to Date objects
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+      }
+    } catch {}
+    return [
+      {
+        sender: "ai",
+        text: "Hi there! 👋 I'm your Study Buddy. I'm here to help you with your studies, answer questions, explain concepts, and support your learning journey. What would you like to explore today?",
+        timestamp: new Date(),
+      },
+    ];
+  };
+  const [messages, setMessages] = useState<Message[]>(getInitialMessages());
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -29,6 +44,16 @@ const StudyBuddy: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "studyBuddyMessages",
+        JSON.stringify(messages)
+      );
+    } catch {}
+  }, [messages]);
 
   // Fetch context (notes, quiz results, learning path) on mount
   useEffect(() => {
@@ -148,7 +173,16 @@ const StudyBuddy: React.FC = () => {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token || ""}`,
           },
-          body: JSON.stringify({ message: input.trim(), context }),
+          body: JSON.stringify({
+            message: input.trim(),
+            context,
+            history: messages.map((msg) => ({
+              sender: msg.sender,
+              text: msg.text,
+              timestamp: msg.timestamp,
+              imageUrl: msg.imageUrl,
+            })),
+          }),
         });
         data = await res.json();
       }
@@ -298,23 +332,101 @@ const StudyBuddy: React.FC = () => {
                     )}
                     {msg.sender === "ai" ? (
                       <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                            ul: ({children}) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-                            ol: ({children}) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
-                            li: ({children}) => <li className="mb-1">{children}</li>,
-                            code: ({children}) => <code className="bg-gray-600 px-1 py-0.5 rounded text-xs">{children}</code>,
-                            pre: ({children}) => <pre className="bg-gray-600 p-2 rounded mt-2 overflow-x-auto text-xs">{children}</pre>,
-                            strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                            em: ({children}) => <em className="italic">{children}</em>,
-                            h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                            h2: ({children}) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                            h3: ({children}) => <h3 className="text-sm font-bold mb-1">{children}</h3>
-                          }}
-                        >
-                          {msg.text}
-                        </ReactMarkdown>
+                        {(() => {
+                          // Detect markdown table
+                          const tableRegex = /^\s*\|.*\|\s*$/m;
+                          const hasTable = tableRegex.test(msg.text);
+                          if (hasTable) {
+                            // Extract table block(s)
+                            const lines = msg.text.split('\n');
+                            let tableBlocks: string[] = [];
+                            let currentTable: string[] = [];
+                            let inTable = false;
+                            lines.forEach(line => {
+                              if (/^\s*\|.*\|\s*$/.test(line)) {
+                                currentTable.push(line);
+                                inTable = true;
+                              } else if (inTable && line.trim() === '') {
+                                if (currentTable.length > 0) {
+                                  tableBlocks.push(currentTable.join('\n'));
+                                  currentTable = [];
+                                }
+                                inTable = false;
+                              } else {
+                                if (inTable) {
+                                  currentTable.push(line);
+                                }
+                              }
+                            });
+                            if (currentTable.length > 0) {
+                              tableBlocks.push(currentTable.join('\n'));
+                            }
+                            // Remove table blocks from text
+                            let plainText = msg.text;
+                            tableBlocks.forEach(tb => {
+                              plainText = plainText.replace(tb, '');
+                            });
+                            // Remove markdown from plainText
+                            const stripMarkdown = (text: string) =>
+                              text
+                                .replace(/!\[.*?\]\(.*?\)/g, '') // images
+                                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
+                                .replace(/`{1,3}[^`]*`{1,3}/g, '') // inline code/blocks
+                                .replace(/[*_~#>-]/g, '') // *, _, ~, #, >, -
+                                .replace(/^\s*\d+\.\s+/gm, '') // numbered lists
+                                .replace(/^\s*[-*+]\s+/gm, '') // bullet lists
+                                .replace(/^\s*>\s+/gm, '') // blockquotes
+                                .replace(/^\s*#+\s+/gm, '') // headings
+                                .replace(/^\s*---+\s*$/gm, '') // hr
+                                .replace(/\n{2,}/g, '\n')
+                                .trim();
+                            return (
+                              <>
+                                {stripMarkdown(plainText) && (
+                                  <p className="mb-2 last:mb-0 whitespace-pre-line">
+                                    {stripMarkdown(plainText)}
+                                  </p>
+                                )}
+                                {tableBlocks.map((tb, i) => (
+                                  <ReactMarkdown
+                                    key={i}
+                                    components={{
+                                      table: ({children}) => (
+                                        <table className="min-w-full border border-gray-600 my-2">{children}</table>
+                                      ),
+                                      th: ({children}) => (
+                                        <th className="border border-gray-600 px-2 py-1 bg-gray-700">{children}</th>
+                                      ),
+                                      td: ({children}) => (
+                                        <td className="border border-gray-600 px-2 py-1">{children}</td>
+                                      ),
+                                    }}
+                                  >
+                                    {tb}
+                                  </ReactMarkdown>
+                                ))}
+                              </>
+                            );
+                          } else {
+                            // No table: render as plain text, strip markdown
+                            const stripMarkdown = (text: string) =>
+                              text
+                                .replace(/!\[.*?\]\(.*?\)/g, '') // images
+                                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
+                                .replace(/`{1,3}[^`]*`{1,3}/g, '') // inline code/blocks
+                                .replace(/[*_~#>-]/g, '') // *, _, ~, #, >, -
+                                .replace(/^\s*\d+\.\s+/gm, '') // numbered lists
+                                .replace(/^\s*[-*+]\s+/gm, '') // bullet lists
+                                .replace(/^\s*>\s+/gm, '') // blockquotes
+                                .replace(/^\s*#+\s+/gm, '') // headings
+                                .replace(/^\s*---+\s*$/gm, '') // hr
+                                .replace(/\n{2,}/g, '\n')
+                                .trim();
+                            return (
+                              <p className="whitespace-pre-line">{stripMarkdown(msg.text)}</p>
+                            );
+                          }
+                        })()}
                       </div>
                     ) : (
                       <p className="text-sm leading-relaxed">{msg.text}</p>

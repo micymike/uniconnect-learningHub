@@ -141,7 +141,8 @@ export class AIService {
   async studyBuddyAgentsChat(
     studentId: string,
     message: string,
-    context?: any
+    context?: any,
+    history?: any[]
   ): Promise<string> {
     // Define agent personas
     const agents = [
@@ -177,13 +178,25 @@ export class AIService {
       }
     }
 
+    // Build conversation history string for context
+    let historyString = "";
+    if (Array.isArray(history) && history.length > 0) {
+      // Only include last 10 exchanges for brevity
+      const lastHistory = history.slice(-10);
+      historyString = lastHistory.map((msg) => {
+        const sender = msg.sender === "user" ? "Student" : "AI";
+        return `${sender}: ${msg.text}`;
+      }).join("\n");
+    }
+
     // Call each agent in parallel
     const agentPromises = agents.map(async (agent) => {
       const prompt = [
         agent.systemPrompt + contextString,
+        historyString ? `Conversation so far:\n${historyString}` : "",
         `Student's question: ${message}`,
         "Your answer:"
-      ].join("\n");
+      ].filter(Boolean).join("\n");
       try {
         const answer = await this.callAzureOpenAI(prompt);
         return `**${agent.name}:**\n${answer}`;
@@ -200,11 +213,12 @@ export class AIService {
       "Below are answers from different expert agents (Explainer, Summarizer, Example Giver, Quizzer) to the same student question.",
       "Your job is to merge all the information and advice from these agents into a single, concise, student-friendly response. Do not mention the agent names or separate sections. Write as one unified answer, focusing on clarity, encouragement, and practical help.",
       "",
+      historyString ? `Conversation so far:\n${historyString}` : "",
       "Agent answers:",
       agentAnswers.join("\n\n"),
       "",
       "Merged answer:"
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 
     const mergedAnswer = await this.callAzureOpenAI(mergePrompt);
     return mergedAnswer;

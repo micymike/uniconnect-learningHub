@@ -50,7 +50,7 @@ export class AIController {
    */
   @UseGuards(JwtAuthGuard)
   @Post('agents-chat')
-  async agentsChat(@Req() req, @Body() body: { message: string; context?: any }) {
+  async agentsChat(@Req() req, @Body() body: { message: string; context?: any; history?: any[] }) {
     // Extract studentId from JWT (assume req.user is set by auth middleware)
     const studentId = req.user?.userId || req.user?.id || req.body.studentId;
     if (!studentId) {
@@ -59,7 +59,8 @@ export class AIController {
     if (!body.message || typeof body.message !== "string") {
       return { error: "Missing or invalid message." };
     }
-    const answer = await this.aiService.studyBuddyAgentsChat(studentId, body.message, body.context);
+    // Pass history to the service
+    const answer = await this.aiService.studyBuddyAgentsChat(studentId, body.message, body.context, body.history);
     return { reply: answer };
   }
   // Analyze Image (OCR + AI Explanation)
