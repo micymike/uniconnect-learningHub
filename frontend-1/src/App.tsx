@@ -10,6 +10,7 @@ import CourseDetails from './pages/CourseDetails';
 import StudentDashboard from './pages/Student/StudentDashboard';
 import './App.css';
 import LessonsPage from './pages/Admin/Lessons';
+import Payments from './pages/Student/Payments';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QuizzesPage from './pages/Admin/Quizzes';
@@ -315,6 +316,7 @@ function App() {
           {/* Student nested routes */}
           <Route index element={<StudentDashboard />} />
           <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="payments" element={<Payments />} />
           <Route path="courses" element={<Courses />} />
           <Route path="courses/:id" element={<CourseDetails />} />
           <Route path="help" element={<div>Help Page</div>} />
