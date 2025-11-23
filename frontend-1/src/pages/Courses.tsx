@@ -143,7 +143,7 @@ const Courses: React.FC = () => {
             {searchTerm || filter !== 'all' ? 'No courses match your criteria' : 'No courses available'}
           </h3>
           <p className="text-gray-400">
-            {searchTerm || filter !== 'all' ? 'Try adjusting your search or filter' : 'Start by creating your first course'}
+            {searchTerm || filter !== 'all' ? 'Try adjusting your search or filter' : 'Start by enrolling to your first course'}
           </p>
         </div>
       )}

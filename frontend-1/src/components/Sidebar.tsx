@@ -5,7 +5,8 @@ import "boxicons/css/boxicons.min.css";
 const navItems = [
   { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
   { label: "Courses", path: "courses", icon: "bx bx-book" },
-  { label: "Notifications", path: "/student/notifications", icon: "bx bx-bell" }
+  { label: "Notifications", path: "/student/notifications", icon: "bx bx-bell" },
+  { label: "Subscriptions", path: "/student/payments", icon: "bx bx-wallet" }
 ];
 
 const aiTools = [
