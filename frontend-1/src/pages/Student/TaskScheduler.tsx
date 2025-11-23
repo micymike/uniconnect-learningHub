@@ -26,6 +26,7 @@ interface Schedule {
   totalDuration: number;
   createdAt: string;
 }
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-jqn0.onrender.com/api";
 
 const TaskScheduler: React.FC = () => {
   const [userInput, setUserInput] = useState('');
@@ -46,6 +47,7 @@ const TaskScheduler: React.FC = () => {
   const [showPreferences, setShowPreferences] = useState(false);
 
   const userId = 'demo-user';
+  
 
   useEffect(() => {
     fetchSchedules();
@@ -53,7 +55,7 @@ const TaskScheduler: React.FC = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch(`https://uniconnect-learninghub-jqn0.onrender.com/api/task-scheduler/schedules?userId=${userId}`);
+      const response = await fetch(`${API_URL}/task-scheduler/schedules?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setSchedules(Array.isArray(data) ? data : []);
@@ -71,7 +73,7 @@ const TaskScheduler: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`https://uniconnect-learninghub-jqn0.onrender.com/api/task-scheduler/create?userId=${userId}`, {
+      const response = await fetch(`${API_URL}/task-scheduler/create?userId=${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userInput, preferences })
@@ -95,7 +97,7 @@ const TaskScheduler: React.FC = () => {
 
   const deleteSchedule = async (scheduleId: string) => {
     try {
-      const response = await fetch(`https://uniconnect-learninghub-backend.onrender.com/task-scheduler/schedules/${scheduleId}?userId=${userId}`, {
+      const response = await fetch(`${API_URL}/task-scheduler/schedules/${scheduleId}?userId=${userId}`, {
         method: 'DELETE'
       });
       
@@ -144,7 +146,7 @@ const TaskScheduler: React.FC = () => {
     if (!selectedSchedule) return;
     
     try {
-      const response = await fetch(`https://uniconnect-learninghub-backend.onrender.com/task-scheduler/schedules/${selectedSchedule.id}?userId=${userId}`, {
+      const response = await fetch(`${API_URL}/task-scheduler/schedules/${selectedSchedule.id}?userId=${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(selectedSchedule)
@@ -160,7 +162,7 @@ const TaskScheduler: React.FC = () => {
 
   const downloadSchedule = async (scheduleId: string, title: string) => {
     try {
-      const response = await fetch(`https://uniconnect-learninghub-backend.onrender.com/task-scheduler/download/${scheduleId}?userId=${userId}`);
+      const response = await fetch(`${API_URL}/task-scheduler/download/${scheduleId}?userId=${userId}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
