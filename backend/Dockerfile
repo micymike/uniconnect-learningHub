@@ -27,9 +27,10 @@ COPY --from=builder /app/dist ./dist
 # Copy any necessary assets (if needed, add COPY for public/static folders here)
 
 # Expose the port (default 3004, can be overridden by PORT env)
-EXPOSE 5501
+EXPOSE 3004
+
+# Set Node.js memory limit for production (can be overridden by Render env)
+ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Use environment variables at runtime (do NOT bake .env into image)
 CMD ["node", "dist/main"]
-
-
