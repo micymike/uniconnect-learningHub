@@ -14,8 +14,8 @@ RUN npm install
 
 RUN npm run build
 
-# Expose Vite preview default port
-EXPOSE 5503
+# Expose port (Render will set PORT env)
+EXPOSE 4173
 
-# Run preview server
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "5503"]
+# Run preview server on the port Render provides
+CMD ["sh", "-c", "npm run preview -- --host 0.0.0.0 --port ${PORT:-4173}"]
