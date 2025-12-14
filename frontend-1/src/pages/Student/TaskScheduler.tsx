@@ -26,7 +26,7 @@ interface Schedule {
   totalDuration: number;
   createdAt: string;
 }
-const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-jqn0.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-1-backend.onrender.com/api";
 
 const TaskScheduler: React.FC = () => {
   const [userInput, setUserInput] = useState('');

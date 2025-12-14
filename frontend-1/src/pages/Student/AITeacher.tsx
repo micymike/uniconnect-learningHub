@@ -141,7 +141,7 @@ const AriaAvatar: React.FC<{ avatarState: 'idle' | 'speaking' | 'listening' }> =
 };
 
 interface AITeacherProps {}
-const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-jqn0.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-1-backend.onrender.com/api";
 const AITeacher: React.FC<AITeacherProps> = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);

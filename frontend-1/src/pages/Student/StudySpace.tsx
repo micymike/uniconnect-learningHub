@@ -4,7 +4,7 @@ import SharedNotes from './SharedNotes';
 import StudySessions from './StudySessions';
 import 'boxicons/css/boxicons.min.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-jqn0.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://uniconnect-learninghub-1-backend.onrender.com/api';
 
 interface StudyPartner {
   id: string;
