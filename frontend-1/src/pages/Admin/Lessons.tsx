@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {ToastContainer , toast } from 'react-toastify';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-backend.onrender.com") + "/api";
 
 interface Lesson {
   id: string;
@@ -47,7 +47,7 @@ const LessonsPage: React.FC = () => {
       setIsLoading(true);
       const response = await fetch(`${API_URL}/lessons`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -104,7 +104,7 @@ const LessonsPage: React.FC = () => {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           ...formData,
@@ -165,7 +165,7 @@ const handleDelete = async (id: string) => {
       const response = await fetch(`${API_URL}/lessons/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       

@@ -8,7 +8,7 @@ const LandingPage = () => {
   const featuresRef = useRef(null);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e:MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
 

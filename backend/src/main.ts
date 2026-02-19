@@ -40,13 +40,13 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['https://uniconnect-learninghub-8s1j.onrender.com', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ['https://www.uniconnect-learninghub.co.ke', 'http://localhost:3000', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
-  const port = configService.get('PORT') || 3004;   
+  const port = process.env.PORT || 3004;
   await app.listen(port);
 
   console.log(`Application is running on: http://localhost:${port}/api`);

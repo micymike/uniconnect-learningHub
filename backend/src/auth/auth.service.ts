@@ -2,6 +2,27 @@ import { Injectable, UnauthorizedException, Inject, BadRequestException, HttpExc
 import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RegisterDto, LoginDto } from './dto';
+import * as jsonwebtoken from 'jsonwebtoken';
+import type { User } from '@supabase/supabase-js';
+
+interface GoogleUser {
+  googleId: string;
+  email: string;
+  displayName: string;
+  photo?: string;
+  provider: string;
+  accessToken: string;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  avatar_url?: string;
+  provider?: string;
+  google_id?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -280,6 +301,83 @@ export class AuthService {
       return data;
     } catch (error) {
       console.error('Update profile error:', error);
+      throw error;
+    }
+  }
+
+// Manual Google OAuth login handler (custom JWT)
+  async googleLogin(googleUser: {
+    email: string;
+    displayName: string;
+    photo?: string;
+    provider: string;
+    googleId?: string;
+  }) {
+    try {
+      // 1. Update or create user profile
+      const { data: existingProfile } = await this.supabaseAdmin
+        .from('user_profiles')
+        .select('*')
+        .eq('email', googleUser.email)
+        .single();
+
+      let profile: UserProfile | null = null;
+      if (existingProfile) {
+        const { data: updatedProfile } = await this.supabaseAdmin
+          .from('user_profiles')
+          .update({
+            full_name: googleUser.displayName,
+            avatar_url: googleUser.photo,
+            provider: 'google',
+            google_id: googleUser.googleId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('email', googleUser.email)
+          .select()
+          .single();
+        profile = updatedProfile || existingProfile;
+      } else {
+        const { v4: uuidv4 } = require('uuid');
+        const generatedId = uuidv4();
+        const { data: insertedProfile } = await this.supabaseAdmin
+          .from('user_profiles')
+          .insert({
+            id: generatedId,
+            email: googleUser.email,
+            full_name: googleUser.displayName,
+            avatar_url: googleUser.photo,
+            provider: 'google',
+            google_id: googleUser.googleId,
+            role: 'student',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        profile = insertedProfile as UserProfile;
+      }
+
+      // 2. Issue custom JWT
+      const jwtPayload = {
+        userId: profile?.id,
+        email: profile?.email,
+        full_name: profile?.full_name,
+        role: profile?.role,
+        avatar_url: profile?.avatar_url,
+        provider: 'google',
+        google_id: profile?.google_id,
+      };
+      const secret = this.config.get('JWT_SECRET') || 'default_jwt_secret';
+      const access_token = jsonwebtoken.sign(jwtPayload, secret, { expiresIn: '7d' });
+
+      return {
+        user: profile,
+        access_token,
+        profile,
+        message: 'Google user logged in with custom JWT.',
+      };
+    } catch (error) {
+      console.error('Google login error:', error);
       throw error;
     }
   }

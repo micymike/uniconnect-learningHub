@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import "boxicons/css/boxicons.min.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-1-backend.onrender.com/api";
+
 type Note = {
   id: string;
   name: string;
@@ -61,7 +63,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
       formData.append("file", uploadFile);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${API_URL}/ai/study-assist`, {
           method: "POST",
           headers: token
             ? { Authorization: `Bearer ${token}` }
@@ -82,7 +84,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
     } else {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/study-assist`, {
+        const response = await fetch(`${API_URL}/ai/study-assist`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -171,7 +173,7 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/upload`, {
+      const response = await fetch(`${API_URL}/notes/upload`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
@@ -235,13 +237,13 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
             <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
               <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                 <i className="bx bx-library text-orange-500 mr-2"></i>
-                Your PDF Documents ({notes.filter(n => n.url.endsWith(".pdf")).length})
+Your PDF Documents ({notes.filter(n => n.url && n.url.endsWith(".pdf")).length})
               </h3>
               
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {notes.filter(n => n.url.endsWith(".pdf")).map((note, index) => (
-                  <button
-                    key={note.id}
+{notes.filter(n => n.url && n.url.endsWith(".pdf")).map((note, index) => (
+  <button
+                    key={note.id || index}
                     className="w-full bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-orange-500 px-4 py-3 rounded-xl text-left transition-all duration-300 transform hover:scale-105 group animate-fade-in-up"
                     style={{ animationDelay: `${index * 100}ms` }}
                     onClick={() => handleSelectNote(note)}
@@ -263,8 +265,8 @@ const AnalyzeWithBuddy: React.FC<AnalyzeWithBuddyProps> = ({ notes, refreshNotes
                   </button>
                 ))}
                 
-                {notes.filter(n => n.url.endsWith(".pdf")).length === 0 && (
-                  <div className="text-center py-12">
+{notes.filter(n => n.url && n.url.endsWith(".pdf")).length === 0 && (
+  <div className="text-center py-12">
                     <i className="bx bx-file-pdf text-6xl text-gray-600 mb-4"></i>
                     <h4 className="text-lg font-semibold text-white mb-2">No PDF documents found</h4>
                     <p className="text-gray-400">Upload your first PDF to get started</p>

@@ -19,7 +19,7 @@ export default function MyNotesWithBuddy() {
     setLoading(true);
     setError(null);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3004/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-1-backend.onrender.com/api";
       const token = localStorage.getItem("token") || "";
       const res = await fetch(`${API_URL}/notes`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -30,7 +30,7 @@ export default function MyNotesWithBuddy() {
         ...n,
         uploadedAt: n.uploaded_at,
       }));
-      setNotes(notes.filter((n: Note) => n.url.endsWith(".pdf")));
+setNotes(notes.filter((n: Note) => n.url && n.url.endsWith(".pdf")));
     } catch (err: any) {
       setNotes([]);
       setError(err.message || "Error fetching notes");

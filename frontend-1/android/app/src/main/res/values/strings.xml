@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">UniConnect Learning Hub</string>
+    <string name="title_activity_main">UniConnect Learning Hub</string>
+    <string name="package_name">com.uniconnect.learninghub</string>
+    <string name="custom_url_scheme">com.uniconnect.learninghub</string>
+</resources>

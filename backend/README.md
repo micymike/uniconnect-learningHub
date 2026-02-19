@@ -59,16 +59,41 @@ $ npm run test:cov
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Docker & Contabo VPS Deployment
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+#### 1. Build the Docker image
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```sh
+docker build -t uniconnect-backend .
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### 2. Prepare your environment variables
+
+- Copy `.env.example` to `.env` and fill in your production values.
+- **Do not commit `.env` to source control.**
+- On Contabo, you can mount the `.env` file or set environment variables via your container runtime.
+
+#### 3. Run the container
+
+```sh
+docker run --env-file .env -p 3004:3004 uniconnect-backend
+```
+
+#### 4. Deploy to Contabo VPS
+
+- Transfer your code or built Docker image to the VPS.
+- Ensure Docker is installed (`sudo apt install docker.io`).
+- Use the above build/run commands.
+- Make sure port 3004 is open in your VPS firewall.
+
+#### 5. (Optional) Use Docker Compose
+
+If your backend needs a database or other services, create a `docker-compose.yml` file.
+
+#### 6. Access your API
+
+- The backend will be available at `http://<your-vps-ip>:3004/api`
+- Swagger docs at `http://<your-vps-ip>:3004/swagger`
 
 ## Resources
 

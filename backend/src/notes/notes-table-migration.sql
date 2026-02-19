@@ -1,9 +1,11 @@
--- Migration to add organization and search/filter columns to the 'notes' table in Supabase
+-- Migration: Create flashcard_scores table
 
-alter table notes
-  add column if not exists folder text,
-  add column if not exists tags text[],
-  add column if not exists color_label text,
-  add column if not exists icon text,
-  add column if not exists file_type text,
-  add column if not exists ocr_text text;
+CREATE TABLE IF NOT EXISTS flashcard_scores (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL,
+  score INTEGER NOT NULL,
+  bonus INTEGER DEFAULT 0,
+  num_questions INTEGER NOT NULL,
+  timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);

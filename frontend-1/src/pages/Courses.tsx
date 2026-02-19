@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import "boxicons/css/boxicons.min.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://uniconnect-learninghub-1-backend.onrender.com/api";
 
 type Course = {
   _id: string;
@@ -143,7 +143,7 @@ const Courses: React.FC = () => {
             {searchTerm || filter !== 'all' ? 'No courses match your criteria' : 'No courses available'}
           </h3>
           <p className="text-gray-400">
-            {searchTerm || filter !== 'all' ? 'Try adjusting your search or filter' : 'Start by creating your first course'}
+            {searchTerm || filter !== 'all' ? 'Try adjusting your search or filter' : 'Start by enrolling to your first course'}
           </p>
         </div>
       )}

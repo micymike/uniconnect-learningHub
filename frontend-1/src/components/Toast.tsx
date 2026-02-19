@@ -28,14 +28,26 @@ export default function Toast({
       style={{ minWidth: 200 }}
       role="alert"
     >
-      {message}
-      <button
-        className="ml-4 text-white font-bold"
-        onClick={onClose}
-        aria-label="Close"
-      >
-        ×
-      </button>
+      <div className="flex items-center justify-between">
+        <span>{message}</span>
+        <div>
+          <button
+            className="ml-4 px-2 py-1 bg-white/20 rounded text-white font-bold hover:bg-white/30 transition"
+            onClick={onClose}
+            aria-label="Clear notification"
+          >
+            Clear
+          </button>
+          <button
+            className="ml-2 text-white font-bold text-xl"
+            onClick={onClose}
+            aria-label="Close"
+            style={{ lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, Res } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Put, Body, Param, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { TaskSchedulerService, Schedule } from './task-scheduler.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -25,6 +25,15 @@ export class TaskSchedulerController {
   async deleteSchedule(@Param('scheduleId') scheduleId: string, @Query('userId') userId: string) {
     await this.taskSchedulerService.deleteSchedule(userId, scheduleId);
     return { message: 'Schedule deleted successfully' };
+  }
+
+  @Put('schedules/:scheduleId')
+  async updateSchedule(
+    @Param('scheduleId') scheduleId: string,
+    @Query('userId') userId: string,
+    @Body() schedule: Schedule
+  ): Promise<Schedule> {
+    return this.taskSchedulerService.updateSchedule(userId, scheduleId, schedule);
   }
 
   @Get('download/:scheduleId')

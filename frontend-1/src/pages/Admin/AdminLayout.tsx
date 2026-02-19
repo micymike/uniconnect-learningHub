@@ -18,7 +18,6 @@ const adminNavItems = [
   { label: "Manage Courses", path: "courses", icon: "bx bx-book" },
   { label: "Manage Quizzes", path: "quizzes", icon: "bx bx-edit" },
   { label: "Manage Lessons", path: "lessons", icon: "bx bx-video" },
-  { label: "Manage Users", path: "users", icon: "bx bx-user" },
 ];
 
 export default function AdminLayout() {

@@ -5,17 +5,21 @@ import "boxicons/css/boxicons.min.css";
 const navItems = [
   { label: "Dashboard", path: "dashboard", icon: "bx bx-home" },
   { label: "Courses", path: "courses", icon: "bx bx-book" },
-  { label: "Settings", path: "settings", icon: "bx bx-cog" },
-  { label: "Help", path: "help", icon: "bx bx-help-circle" },
-  { label: "Feedback", path: "feedback", icon: "bx bx-message-detail" },
-  { label: "Notes", path: "notes", icon: "bx bx-notepad" },
+  { label: "Notifications", path: "/student/notifications", icon: "bx bx-bell" },
+  { label: "Subscriptions", path: "/student/payments", icon: "bx bx-wallet" }
 ];
 
 const aiTools = [
+  /* { label: "AI Teacher", path: "/student/ai-teacher", icon: "bx bx-user-voice" }, */
   { label: "Study Buddy", path: "/student/chatbot", icon: "bx bx-message-dots" },
+  { label: "MathGPT", path: "/student/mathgpt", icon: "bx bx-math" },
+  { label: "AI Note Taker", path: "/student/ai-note-taker", icon: "bx bx-microphone" },
+  { label: "Matching Game", path: "/student/matching-game", icon: "bx bx-game" },
   { label: "Flashcards", path: "/student/flashcards", icon: "bx bx-collection" },
   { label: "Task Scheduler", path: "/student/task-scheduler", icon: "bx bx-calendar-check" },
   { label: "My Notes", path: "/student/mynotes", icon: "bx bx-notepad" },
+  { label: "Find Study Partner", path: "/student/find-partner", icon: "bx bx-user-plus" },
+  { label: "Study Space", path: "/student/study-space", icon: "bx bx-group" },
 ];
 
 
@@ -35,6 +39,7 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 
@@ -48,7 +53,7 @@ export default function Sidebar() {
     <>
       {/* Mobile Hamburger */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 bg-gray-900 hover:bg-gray-800 text-orange-400 p-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110"
+        className="lg:hidden fixed top-4 right-4 z-50 bg-gray-900 hover:bg-gray-800 text-orange-400 p-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110"
         onClick={() => setOpen(!open)}
         aria-label="Toggle sidebar"
       >
@@ -57,8 +62,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white fixed top-0 left-0 h-full w-72 z-40 flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out
-          ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:fixed lg:h-screen border-r border-gray-800`}
+        className={`bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white fixed top-0 right-0 h-full w-72 z-40 flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out
+          ${open ? "translate-x-0" : "translate-x-full"} lg:left-0 lg:right-auto lg:translate-x-0 lg:fixed lg:h-screen border-l border-gray-800`}
       >
         {/* Header */}
         <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-orange-500 to-orange-600">
@@ -120,6 +125,29 @@ export default function Sidebar() {
                   </button>
                 </li>
               ))}
+              {/* Admin Panel Button for Admin */}
+              {((
+                (user?.email && user?.email.toLowerCase() === "mosesmichael878@gmail.com") ||
+                (user?.user_metadata?.role && (user?.user_metadata?.role.toLowerCase() === "admin" || user?.user_metadata?.role.toLowerCase() === "supaadmin")) ||
+                (typeof localStorage !== "undefined" && localStorage.getItem("userRole") && (localStorage.getItem("userRole")!.toLowerCase() === "admin" || localStorage.getItem("userRole")!.toLowerCase() === "supaadmin"))
+              )) && (
+                <li className="animate-fade-in-up" style={{ animationDelay: `${(navItems.length + 1) * 50}ms` }}>
+                  <button
+                    className={`flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 text-left group relative overflow-hidden bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105`}
+                    onClick={() => {
+                      try {
+                        navigate("/admin", { replace: true });
+                        setOpen(false);
+                      } catch (e) {
+                        window.location.href = "/admin";
+                      }
+                    }}
+                  >
+                    <i className="bx bx-cog text-xl mr-3 transition-transform duration-300 group-hover:scale-110"></i>
+                    <span className="font-medium">Admin Panel</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 

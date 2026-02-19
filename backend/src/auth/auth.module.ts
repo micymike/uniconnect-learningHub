@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
+import { GoogleStrategy } from './google.strategy';
 
 @Module({
   imports: [
@@ -15,12 +16,12 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default_jwt_secret',
-      signOptions: { expiresIn: '1d' },
+      signOptions: { expiresIn: '7d' },
     }),
   ],
 
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, JwtStrategy],
+  providers: [AuthService, AuthGuard, JwtStrategy, GoogleStrategy],
   exports: [AuthService, AuthGuard],
   
 })

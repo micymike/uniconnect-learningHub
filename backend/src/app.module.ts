@@ -11,14 +11,19 @@ import { QuizzesModule } from './quizzes/quizzes.module';
 import { AuthModule } from './auth/auth.module';
 import { AIModule } from './ai/ai.module';
 import { TaskSchedulerModule } from './task-scheduler/task-scheduler.module';
+import { ChatModule } from './chat/chat.module';
+import { SharedNotesModule } from './shared-notes/shared-notes.module';
+import { StudySessionsModule } from './study-sessions/study-sessions.module';
+import { StudyGroupsModule } from './study-groups/study-groups.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     NotesModule,
-    ConfigModule.forRoot({
-      isGlobal: true, 
+ConfigModule.forRoot({
+  isGlobal: true,
       envFilePath: '${process.cwd()}/.env' 
-    }),
+}),
     SupabaseModule,
     UsersModule,
     AnalyticsModule,
@@ -29,6 +34,11 @@ import { TaskSchedulerModule } from './task-scheduler/task-scheduler.module';
     AuthModule,
     AIModule,
     TaskSchedulerModule,
+    ChatModule,
+    SharedNotesModule,
+    StudySessionsModule,
+    StudyGroupsModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],
