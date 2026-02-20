@@ -16,6 +16,7 @@ import { SharedNotesModule } from './shared-notes/shared-notes.module';
 import { StudySessionsModule } from './study-sessions/study-sessions.module';
 import { StudyGroupsModule } from './study-groups/study-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ ConfigModule.forRoot({
     StudySessionsModule,
     StudyGroupsModule,
     NotificationsModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [],
