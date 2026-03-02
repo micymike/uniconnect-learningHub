@@ -4,6 +4,7 @@ import { UNSAFE_DataRouterContext, UNSAFE_DataRouterStateContext } from 'react-r
 import Courses from './pages/Courses';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import AdminCourses from './pages/Admin/AdminCourses';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import CourseDetails from './pages/CourseDetails';
@@ -284,6 +285,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         
