@@ -1,21 +1,18 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Inject } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '../auth/guards/auth.guard';
+import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(SupabaseAuthGuard, RolesGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
-    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient
   ) {}
 
   @Get('dashboard')
@@ -26,13 +23,6 @@ export class AnalyticsController {
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async getSummary() {
     try {
-      // Verify user session
-      const { data: { user }, error } = await this.supabase.auth.getUser();
-      
-      if (error || !user) {
-        throw new Error('Failed to verify user session');
-      }
-
       return await this.analyticsService.getSummary();
     } catch (error) {
       throw new Error(`Failed to fetch analytics: ${error.message}`);

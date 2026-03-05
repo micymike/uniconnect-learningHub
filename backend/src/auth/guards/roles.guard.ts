@@ -43,7 +43,7 @@ export class RolesGuard implements CanActivate {
 
     // Super admin bypass
     if (user.email === 'mosesmichael878@gmail.com') {
-      request.user.role = 'admin';
+      request.user.role = UserRole.ADMIN;
       return requiredRoles.includes(UserRole.ADMIN);
     }
 
