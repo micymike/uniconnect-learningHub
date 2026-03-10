@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, Inject, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { RegisterDto, LoginDto } from '../dto';
 
 @Injectable()
@@ -214,8 +214,15 @@ export class AuthGuard {
 
   async forgotPassword(email: string) {
     try {
+      const frontendUrl =
+        this.config.get('FRONTEND_URLS')?.split(',')[0]?.trim() ||
+        'http://localhost:3000';
+      const redirectTo =
+        this.config.get('PASSWORD_RESET_REDIRECT_URL') ||
+        `${frontendUrl}/reset-password`;
+
       const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: this.config.get('PASSWORD_RESET_REDIRECT_URL'),
+        redirectTo,
       });
 
       if (error) {
@@ -231,26 +238,53 @@ export class AuthGuard {
     }
   }
 
-  async resetPassword(accessToken: string, newPassword: string) {
+  async resetPassword(
+    accessToken: string,
+    newPassword: string,
+    confirmPassword: string,
+    refreshToken?: string,
+  ) {
     try {
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException('Passwords do not match');
+      }
+
       const { data: { user }, error: userError } = await this.supabase.auth.getUser(accessToken);
       
       if (userError || !user) {
         throw new UnauthorizedException('Invalid or expired reset token');
       }
 
-      // Establish password reset session
-      const { data: sessionData, error: sessionError } = await this.supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: '', 
-      });
+      if (user.email) {
+        const supabaseUrl = this.config.get<string>('SUPABASE_URL');
+        const supabaseKey = this.config.get<string>('SUPABASE_ANON_KEY');
+        if (supabaseUrl && supabaseKey) {
+          const authCheckClient = createClient(supabaseUrl, supabaseKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: signInData, error: signInError } =
+            await authCheckClient.auth.signInWithPassword({
+              email: user.email,
+              password: newPassword,
+            });
 
-      if (sessionError) {
-        throw new UnauthorizedException('Failed to establish session for password reset');
+          if (signInData?.session && !signInError) {
+            throw new BadRequestException('New password must be different from old password');
+          }
+        }
       }
 
-      // Update password
-      const { error } = await this.supabase.auth.updateUser({
+      if (refreshToken) {
+        const { error: sessionError } = await this.supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          throw new UnauthorizedException('Failed to establish session for password reset');
+        }
+      }
+
+      const { error } = await this.supabaseAdmin.auth.admin.updateUserById(user.id, {
         password: newPassword,
       });
 
